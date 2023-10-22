@@ -459,6 +459,20 @@ public:
     return Session_properties{api};
   }
 
+  void pause()
+  {
+    const auto err = com().api().Pause();
+    if (err != S_OK)
+      throw Win_error{L"cannot pause RDP server", err};
+  }
+
+  void resume()
+  {
+    const auto err = com().api().Resume();
+    if (err != S_OK)
+      throw Win_error{L"cannot resume RDP server", err};
+  }
+
 private:
   bool is_open_{};
 };

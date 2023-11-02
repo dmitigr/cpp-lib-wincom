@@ -526,6 +526,20 @@ public:
     assert(api);
     return Session_properties{api};
   }
+
+  void set_smart_sizing_enabled(const bool value)
+  {
+    const VARIANT_BOOL val{value ? VARIANT_TRUE : VARIANT_FALSE};
+    com().api().put_SmartSizing(val);
+  }
+
+  bool is_smart_sizing_enabled() const noexcept
+  {
+    using Api = decltype(const_cast<Client*>(this)->com().api());
+    VARIANT_BOOL result{VARIANT_FALSE};
+    const_cast<Api&>(com().api()).get_SmartSizing(&result);
+    return result == VARIANT_TRUE;
+  }
 };
 
 } // namespace dmitigr::wincom::rdp

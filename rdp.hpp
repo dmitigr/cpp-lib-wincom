@@ -16,13 +16,12 @@
 
 #pragma once
 
-#include "../base/noncopymove.hpp"
 #include "../winbase/windows.hpp"
 #include "exceptions.hpp"
+#include "object.hpp"
 
 #include <comdef.h> // avoid LNK2019
 #include <comutil.h>
-#include <Objbase.h>
 #include <oleauto.h>
 #include <Rdpencomapi.h>
 
@@ -32,68 +31,6 @@
 #include <type_traits>
 
 namespace dmitigr::wincom::rdp {
-
-template<class DerivedType, class ApiType>
-class Unknown_api : private Noncopy {
-public:
-  using Api = ApiType;
-  using Derived = DerivedType;
-
-  static_assert(std::is_base_of_v<IUnknown, Api>);
-
-  virtual ~Unknown_api()
-  {
-    if (api_) {
-      api_->Release();
-      api_ = nullptr;
-    }
-  }
-
-  static Derived query(IUnknown* const unknown)
-  {
-    assert(unknown);
-    Api* api{};
-    unknown->QueryInterface(&api);
-    assert(api);
-    return Derived{api};
-  }
-
-protected:
-  Unknown_api() = default;
-
-  explicit Unknown_api(Api* const api)
-    : api_{api}
-  {
-    assert(api);
-  }
-
-  Unknown_api(Unknown_api&& rhs) noexcept
-    : api_{rhs.api_}
-  {
-    rhs.api_ = nullptr;
-  }
-
-  Unknown_api& operator=(Unknown_api&& rhs) noexcept
-  {
-    Unknown_api tmp{std::move(rhs)};
-    swap(tmp);
-    return *this;
-  }
-
-  void swap(Unknown_api& rhs) noexcept
-  {
-    using std::swap;
-    swap(api_, rhs.api_);
-  }
-
-  Api* api() const noexcept
-  {
-    return api_;
-  }
-
-private:
-  Api* api_{};
-};
 
 class Invitation final
   : public Unknown_api<Invitation, IRDPSRAPIInvitation> {
@@ -295,47 +232,6 @@ private:
   ULONG ref_count_{};
 };
 
-template<class Object, class ObjectInterface>
-class Basic_com_object final : private Noncopymove {
-public:
-  ~Basic_com_object()
-  {
-    assert(api_);
-    api_->Release();
-    api_ = nullptr;
-  }
-
-  Basic_com_object()
-    : Basic_com_object{CLSCTX_INPROC_SERVER}
-  {}
-
-  explicit Basic_com_object(const DWORD context)
-  {
-    if (const auto err = CoCreateInstance(
-        __uuidof(Object),
-        nullptr, // not a part of an aggregate
-        context,
-        __uuidof(ObjectInterface),
-        reinterpret_cast<LPVOID*>(&api_)); err != S_OK)
-      throw Win_error{L"cannot create COM object", err};
-    assert(api_);
-  }
-
-  const ObjectInterface& api() const noexcept
-  {
-    return *api_;
-  }
-
-  ObjectInterface& api() noexcept
-  {
-    return const_cast<ObjectInterface&>(
-      static_cast<const Basic_com_object*>(this)->api());
-  }
-
-private:
-  ObjectInterface* api_{};
-};
-
 template<class BasicComObject>
 class Basic_rdp_peer : private Noncopymove {
 public:
@@ -535,9 +431,8 @@ public:
 
   bool is_smart_sizing_enabled() const noexcept
   {
-    using Api = decltype(const_cast<Client*>(this)->com().api());
     VARIANT_BOOL result{VARIANT_FALSE};
-    const_cast<Api&>(com().api()).get_SmartSizing(&result);
+    detail::api(com()).get_SmartSizing(&result);
     return result == VARIANT_TRUE;
   }
 };

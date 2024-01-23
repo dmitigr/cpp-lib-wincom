@@ -24,6 +24,7 @@
 #include <unknwn.h>
 
 #include <algorithm>
+#include <stdexcept>
 #include <type_traits>
 
 namespace dmitigr::wincom {
@@ -46,7 +47,8 @@ public:
 
   static Derived query(IUnknown* const unknown)
   {
-    assert(unknown);
+    if (!unknown)
+      throw std::invalid_argument{"cannot query IUnknown: null pointer"};
     Api* api{};
     unknown->QueryInterface(&api);
     assert(api);
@@ -58,9 +60,7 @@ protected:
 
   explicit Unknown_api(Api* const api)
     : api_{api}
-  {
-    assert(api);
-  }
+  {}
 
   Unknown_api(Unknown_api&& rhs) noexcept
     : api_{rhs.api_}
@@ -113,7 +113,8 @@ public:
         __uuidof(ObjectInterface),
         reinterpret_cast<LPVOID*>(&api_)); err != S_OK)
       throw Win_error{L"cannot create COM object", err};
-    assert(api_);
+    if (!api_)
+      throw std::logic_error{"invalid COM instance created"};
   }
 
   Basic_com_object(Basic_com_object&& rhs) noexcept

@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 
 namespace dmitigr::wincom {
@@ -159,6 +160,35 @@ ObjectInterface& api(const Basic_com_object<Object, ObjectInterface>& com) noexc
 {
   using Com = std::decay_t<decltype(com)>;
   return const_cast<Com&>(com).api();
+}
+
+template<class String, class Wrapper, class Api>
+String str(const Wrapper& wrapper, HRESULT(Api::* getter)())
+{
+  BSTR value;
+  (detail::api(wrapper)->*getter)(&value);
+  _bstr_t tmp{value, false}; // take ownership
+  return String(tmp);
+}
+
+inline auto* c_str(const std::string& s)
+{
+  return s.c_str();
+}
+
+inline auto* c_str(const std::wstring& s)
+{
+  return s.c_str();
+}
+
+inline auto* c_str(const char*& s)
+{
+  return s;
+}
+
+inline auto* c_str(const wchar_t*& s)
+{
+  return s;
 }
 
 } // namespace detail

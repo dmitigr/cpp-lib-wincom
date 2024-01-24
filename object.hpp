@@ -191,6 +191,12 @@ inline auto* c_str(const wchar_t*& s)
   return s;
 }
 
+template<typename String>
+inline _bstr_t bstr(const String& s)
+{
+  return _bstr_t{c_str(s)};
+}
+
 } // namespace detail
 
 } // namespace dmitigr::wincom

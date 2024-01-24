@@ -96,9 +96,10 @@ class Basic_com_object : private Noncopy {
 public:
   virtual ~Basic_com_object()
   {
-    assert(api_);
-    api_->Release();
-    api_ = nullptr;
+    if (api_) {
+      api_->Release();
+      api_ = nullptr;
+    }
   }
 
   Basic_com_object()

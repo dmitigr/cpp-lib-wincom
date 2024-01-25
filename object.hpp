@@ -24,7 +24,6 @@
 #include <unknwn.h>
 
 #include <algorithm>
-#include <new>
 #include <stdexcept>
 #include <string>
 #include <typeinfo>

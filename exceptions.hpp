@@ -16,35 +16,16 @@
 
 #pragma once
 
-#include <exception>
+#include <stdexcept>
 #include <string>
 
 namespace dmitigr::wincom {
 
-class Exception : public std::exception {
+class Win_error final : public std::runtime_error {
 public:
-  explicit Exception(std::wstring message)
-    : message_{std::move(message)}
-  {}
-
-  const char* what() const noexcept override
-  {
-    return "Exception (see message())";
-  }
-
-  const std::wstring& message() const noexcept
-  {
-    return message_;
-  }
-
-private:
-  std::wstring message_;
-};
-
-class Win_error : public Exception {
-public:
-  Win_error(std::wstring message, const long code)
-    : Exception{message.append(L" (error ").append(std::to_wstring(code)).append(L")")}
+  Win_error(std::string message, const long code)
+    : std::runtime_error{message
+        .append(" (error ").append(std::to_string(code)).append(")")}
     , code_{code}
   {}
 
@@ -58,10 +39,10 @@ private:
 };
 
 template<typename T>
-inline void check(const T& condition, std::wstring message)
+inline void check(const T& condition, const std::string& message)
 {
   if (!static_cast<bool>(condition))
-    throw Exception{std::move(message)};
+    throw std::logic_error{message};
 }
 
 } // namespace dmitigr::wincom

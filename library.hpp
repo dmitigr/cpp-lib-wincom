@@ -31,11 +31,15 @@ public:
     CoUninitialize();
   }
 
-  explicit Library(const DWORD concurrency_model = COINIT_MULTITHREADED)
+  Library()
+    : Library{COINIT_MULTITHREADED}
+  {}
+
+  explicit Library(const DWORD concurrency_model)
   {
     const auto err = CoInitializeEx(nullptr, concurrency_model);
     if (err != S_OK && err != S_FALSE)
-      throw Win_error{L"cannot initialize COM library", err};
+      throw Win_error{"cannot initialize COM library", err};
   }
 };
 

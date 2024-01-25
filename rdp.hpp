@@ -27,134 +27,92 @@
 
 #include <algorithm>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 
 namespace dmitigr::wincom::rdp {
 
-class Invitation final
-  : public Unknown_api<Invitation, IRDPSRAPIInvitation> {
+class Invitation final : public
+  Unknown_api<Invitation, IRDPSRAPIInvitation> {
+  using Ua = Unknown_api<Invitation, IRDPSRAPIInvitation>;
 public:
-  using Super = Unknown_api<Invitation, IRDPSRAPIInvitation>;
-  using Api = Super::Api;
-
-  Invitation() = default;
-
-  explicit Invitation(IRDPSRAPIInvitation* const api)
-    : Super{api}
-  {}
+  using Ua::Ua;
 
   template<class String>
   String connection() const
   {
-    check(api(), L"invalid RDP invitation instance used");
-
-    BSTR value;
-    api()->get_ConnectionString(&value);
-    _bstr_t tmp{value, false}; // take ownership
-    return String(tmp);
+    return detail::str<String>(*this, &IRDPSRAPIInvitation::get_ConnectionString);
   }
 };
 
-class Invitation_manager final
-  : public Unknown_api<Invitation_manager, IRDPSRAPIInvitationManager> {
+class Invitation_manager final : public
+  Unknown_api<Invitation_manager, IRDPSRAPIInvitationManager> {
+  using Ua = Unknown_api<Invitation_manager, IRDPSRAPIInvitationManager>;
 public:
-  using Super = Unknown_api<Invitation_manager, IRDPSRAPIInvitationManager>;
-  using Api = Super::Api;
+  using Ua::Ua;
 
-  Invitation_manager() = default;
-
-  Invitation_manager(IRDPSRAPIInvitationManager* const api)
-    : Super{api}
-  {}
-
-  Invitation create_invitation(const std::wstring& group,
-    const std::wstring& password, const long limit)
+  template<class GroupString, class PasswordString>
+  Invitation create_invitation(const GroupString& group,
+    const PasswordString& password, const long limit)
   {
-    check(api(), L"invalid RDP invitation manager instance used");
-
     IRDPSRAPIInvitation* invitation{};
-    const auto err = api()->CreateInvitation(
+    const auto err = api().CreateInvitation(
       nullptr,
-      _bstr_t{group.c_str()},
-      _bstr_t{password.c_str()},
+      detail::bstr(group),
+      detail::bstr(password),
       limit,
       &invitation);
     if (err != S_OK)
-      throw Win_error{L"cannot create IRDPSRAPIInvitation instance", err};
-
+      throw Win_error{"cannot create IRDPSRAPIInvitation instance", err};
     return Invitation{invitation};
   }
 };
 
-class Attendee_manager final
-  : public Unknown_api<Attendee_manager, IRDPSRAPIAttendeeManager> {
+class Attendee_manager final : public
+  Unknown_api<Attendee_manager, IRDPSRAPIAttendeeManager> {
+  using Ua = Unknown_api<Attendee_manager, IRDPSRAPIAttendeeManager>;
 public:
-  using Super = Unknown_api<Attendee_manager, IRDPSRAPIAttendeeManager>;
-  using Api = Super::Api;
-
-  Attendee_manager() = default;
-
-  Attendee_manager(IRDPSRAPIAttendeeManager* const api)
-    : Super{api}
-  {}
+  using Ua::Ua;
 };
 
-class Attendee final
-  : public Unknown_api<Attendee, IRDPSRAPIAttendee> {
+class Attendee final : public
+  Unknown_api<Attendee, IRDPSRAPIAttendee> {
+  using Ua = Unknown_api<Attendee, IRDPSRAPIAttendee>;
 public:
-  using Super = Unknown_api<Attendee, IRDPSRAPIAttendee>;
-  using Api = Super::Api;
-
-  Attendee() = default;
-
-  Attendee(IRDPSRAPIAttendee* const api)
-    : Super{api}
-  {}
+  using Ua::Ua;
 
   void set_control_level(const CTRL_LEVEL level)
   {
-    check(api(), L"invalid RDP attendee instance used");
-
-    api()->put_ControlLevel(level);
+    api().put_ControlLevel(level);
   }
 };
 
-class Session_properties final
-  : public Unknown_api<Session_properties, IRDPSRAPISessionProperties> {
+class Session_properties final : public
+  Unknown_api<Session_properties, IRDPSRAPISessionProperties> {
+  using Ua = Unknown_api<Session_properties, IRDPSRAPISessionProperties>;
 public:
-  using Super = Unknown_api<Session_properties, IRDPSRAPISessionProperties>;
-  using Api = Super::Api;
-
-  Session_properties() = default;
-
-  Session_properties(IRDPSRAPISessionProperties* const api)
-    : Super{api}
-  {}
+  using Ua::Ua;
 
   Session_properties&
   set_clipboard_redirect_enabled(const bool value)
   {
-    check(api(), L"invalid RDP session properties instance used");
-
     VARIANT val{};
     VariantInit(&val);
     val.vt = VT_BOOL;
     val.boolVal = value ? VARIANT_TRUE : VARIANT_FALSE;
-    api()->put_Property(_bstr_t{"EnableClipboardRedirect"}, val);
+    api().put_Property(_bstr_t{"EnableClipboardRedirect"}, val);
     return *this;
   }
 
   Session_properties&
   set_clipboard_redirect_callback(IRDPSRAPIClipboardUseEvents* const value)
   {
-    check(api(), L"invalid RDP session properties instance used");
-
     VARIANT val{};
     VariantInit(&val);
     val.vt = VT_UNKNOWN;
     val.punkVal = value;
-    api()->put_Property(_bstr_t{"SetClipboardRedirectCallback"}, val);
+    api().put_Property(_bstr_t{"SetClipboardRedirectCallback"}, val);
     return *this;
   }
 };
@@ -163,8 +121,6 @@ public:
 
 class Event_dispatcher : public _IRDPSessionEvents, private Noncopymove {
 public:
-  using Super = _IRDPSessionEvents;
-
   virtual void set_owner(void* owner) = 0;
 
   // IUnknown overrides
@@ -174,8 +130,8 @@ public:
     if (!object)
       return E_POINTER;
 
-    if (id == __uuidof(Super))
-      *object = static_cast<Super*>(this);
+    if (id == __uuidof(_IRDPSessionEvents))
+      *object = static_cast<_IRDPSessionEvents*>(this);
     else if (id == __uuidof(IDispatch))
       *object = static_cast<IDispatch*>(this);
     else if (id == __uuidof(IUnknown))
@@ -254,21 +210,21 @@ public:
     : com_{std::move(co)}
     , event_dispatcher_{std::move(ed)}
   {
-    const wchar_t* errmsg{};
+    const char* errmsg{};
     if (!com_)
-      errmsg = L"invalid COM object";
+      throw std::invalid_argument{"invalid COM object"};
     else if (!event_dispatcher_)
-      errmsg = L"invalid event dispatcher";
+      throw std::invalid_argument{"invalid event dispatcher"};
     else if (com_->api().QueryInterface(&point_container_) != S_OK)
-      errmsg = L"cannot query container for event connection point";
+      errmsg = "cannot query container for event connection point";
     else if (point_container_->FindConnectionPoint(
         __uuidof(_IRDPSessionEvents), &point_) != S_OK)
-      errmsg = L"cannot find event connection point";
+      errmsg = "cannot find event connection point";
     else if (point_->Advise(event_dispatcher_.get(), &event_connection_token_) != S_OK)
-      errmsg = L"cannot get event connection token";
+      errmsg = "cannot get event connection token";
 
     if (errmsg)
-      throw Exception{errmsg};
+      throw std::runtime_error{errmsg};
 
     event_dispatcher_->set_owner(this);
   }
@@ -303,15 +259,14 @@ using Server_base = Basic_rdp_peer<Sharer>;
 
 class Server final : public Server_base {
 public:
-  using Super = Server_base;
-  using Super::Super;
+  using Server_base::Server_base;
 
   void open()
   {
     if (!is_open_) {
       const auto err = com().api().Open();
       if (err != S_OK)
-        throw Win_error{L"cannot open RDP server", err};
+        throw Win_error{"cannot open RDP server", err};
       is_open_ = true;
     }
   }
@@ -321,7 +276,7 @@ public:
     if (is_open_) {
       const auto err = com().api().Close();
       if (err != S_OK)
-        throw Win_error{L"cannot close RDP server", err};
+        throw Win_error{"cannot close RDP server", err};
       is_open_ = false;
     }
   }
@@ -335,7 +290,7 @@ public:
   {
     IRDPSRAPIInvitationManager* api{};
     com().api().get_Invitations(&api);
-    assert(api);
+    check(api, "invalid IRDPSRAPIInvitationManager instance retrieved");
     return Invitation_manager{api};
   }
 
@@ -343,7 +298,7 @@ public:
   {
     IRDPSRAPIAttendeeManager* api{};
     com().api().get_Attendees(&api);
-    assert(api);
+    check(api, "invalid IRDPSRAPIInvitationManager instance retrieved");
     return Attendee_manager{api};
   }
 
@@ -351,7 +306,7 @@ public:
   {
     IRDPSRAPISessionProperties* api{};
     com().api().get_Properties(&api);
-    assert(api);
+    check(api, "invalid IRDPSRAPIInvitationManager instance retrieved");
     return Session_properties{api};
   }
 
@@ -359,14 +314,14 @@ public:
   {
     const auto err = com().api().Pause();
     if (err != S_OK)
-      throw Win_error{L"cannot pause RDP server", err};
+      throw Win_error{"cannot pause RDP server", err};
   }
 
   void resume()
   {
     const auto err = com().api().Resume();
     if (err != S_OK)
-      throw Win_error{L"cannot resume RDP server", err};
+      throw Win_error{"cannot resume RDP server", err};
   }
 
 private:
@@ -379,8 +334,7 @@ private:
 
 class Client final : public Client_base {
 public:
-  using Super = Client_base;
-  using Super::Super;
+  using Client_base::Client_base;
 
   ~Client() override
   {
@@ -394,32 +348,32 @@ public:
     const NameStr& name, const PassStr& password)
   {
     const auto err = com().api().Connect(
-      _bstr_t{connection_string.c_str()},
-      _bstr_t{name.c_str()},
-      _bstr_t{password.c_str()});
+      detail::bstr(connection_string),
+      detail::bstr(name),
+      detail::bstr(password));
     if (err != S_OK)
-      throw Win_error{L"cannot open RDP client", err};
+      throw Win_error{"cannot open RDP client", err};
   }
 
   void close()
   {
     const auto err = com().api().Disconnect();
     if (err != S_OK)
-      throw Win_error{L"cannot close RDP client", err};
+      throw Win_error{"cannot close RDP client", err};
   }
 
   void set_control_level(const CTRL_LEVEL level)
   {
     const auto err = com().api().RequestControl(level);
     if (err != S_OK)
-      throw Win_error{L"cannot set control level of RDP client", err};
+      throw Win_error{"cannot set control level of RDP client", err};
   }
 
   Session_properties session_properties()
   {
     IRDPSRAPISessionProperties* api{};
     com().api().get_Properties(&api);
-    assert(api);
+    check(api, "invalid IRDPSRAPISessionProperties instance retrieved");
     return Session_properties{api};
   }
 

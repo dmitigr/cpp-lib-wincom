@@ -24,9 +24,12 @@
 
 namespace dmitigr::wincom::firewall {
 
-class Authorized_application final :
-  public Basic_com_object<NetFwAuthorizedApplication, INetFwAuthorizedApplication> {
+class Authorized_application final : public
+  Basic_com_object<NetFwAuthorizedApplication, INetFwAuthorizedApplication> {
+  using Bco = Basic_com_object<NetFwAuthorizedApplication, INetFwAuthorizedApplication>;
 public:
+  using Bco::Bco;
+
   bool is_enabled() const
   {
     VARIANT_BOOL result{VARIANT_FALSE};
@@ -84,112 +87,74 @@ public:
 
 // -----------------------------------------------------------------------------
 
-class Authorized_applications final :
-  public Unknown_api<Authorized_applications, INetFwAuthorizedApplications> {
+class Authorized_applications final : public
+  Unknown_api<Authorized_applications, INetFwAuthorizedApplications> {
+  using Ua = Unknown_api<Authorized_applications, INetFwAuthorizedApplications>;
 public:
-  using Super = Unknown_api<Authorized_applications, INetFwAuthorizedApplications>;
-  using Api = Super::Api;
-
-  Authorized_applications() = default;
-
-  explicit Authorized_applications(INetFwAuthorizedApplications* const api)
-    : Super{api}
-  {}
+  using Ua::Ua;
 
   Authorized_applications& add(const Authorized_application& app)
   {
-    check();
-    const auto err = api()->Add(&detail::api(app));
+    const auto err = api().Add(&detail::api(app));
     if (err != S_OK)
-      throw Win_error{L"cannot add application to firewall collection", err};
+      throw Win_error{"cannot add application to firewall collection", err};
     return *this;
   }
 
   template<class String>
   Authorized_application& remove(const String& image_file_name)
   {
-    check();
-    const auto err = api()->Remove(detail::bstr(image_file_name));
+    const auto err = api().Remove(detail::bstr(image_file_name));
     if (err != S_OK)
-      throw Win_error{L"cannot add application to firewall collection", err};
+      throw Win_error{"cannot add application to firewall collection", err};
     return *this;
-  }
-
-private:
-  void check() const
-  {
-    wincom::check(api(), L"invalid firewall::Authorized_applications instance used");
   }
 };
 
 // -----------------------------------------------------------------------------
 
 class Profile final : public Unknown_api<Profile, INetFwProfile> {
+  using Ua = Unknown_api<Profile, INetFwProfile>;
 public:
-  using Super = Unknown_api<Profile, INetFwProfile>;
-  using Api = Super::Api;
-
-  Profile() = default;
-
-  explicit Profile(INetFwProfile* const api)
-    : Super{api}
-  {}
+  using Ua::Ua;
 
   Authorized_applications authorized_applications() const
   {
-    check();
     INetFwAuthorizedApplications* apps{};
-    api()->get_AuthorizedApplications(&apps);
+    detail::api(*this).get_AuthorizedApplications(&apps);
     return Authorized_applications{apps};
-  }
-
-private:
-  void check() const
-  {
-    wincom::check(api(), L"invalid firewall::Profile instance used");
   }
 };
 
 // -----------------------------------------------------------------------------
 
 class Policy final : public Unknown_api<Policy, INetFwPolicy> {
+  using Ua = Unknown_api<Policy, INetFwPolicy>;
 public:
-  using Super = Unknown_api<Policy, INetFwPolicy>;
-  using Api = Super::Api;
-
-  Policy() = default;
-
-  explicit Policy(INetFwPolicy* const api)
-    : Super{api}
-  {}
+  using Ua::Ua;
 
   Profile current_profile() const
   {
-    check();
     INetFwProfile* profile{};
-    api()->get_CurrentProfile(&profile);
+    detail::api(*this).get_CurrentProfile(&profile);
     return Profile{profile};
   }
 
   Profile profile(const NET_FW_PROFILE_TYPE value) const
   {
-    check();
     INetFwProfile* profile{};
-    api()->GetProfileByType(value, &profile);
+    detail::api(*this).GetProfileByType(value, &profile);
     return Profile{profile};
-  }
-
-private:
-  void check() const
-  {
-    wincom::check(api(), L"invalid firewall::Policy instance used");
   }
 };
 
 // -----------------------------------------------------------------------------
 
-class Manager final : Basic_com_object<NetFwMgr, INetFwMgr> {
+class Manager final : public Basic_com_object<NetFwMgr, INetFwMgr> {
+  using Bco = Basic_com_object<NetFwMgr, INetFwMgr>;
 public:
+  using Bco::Bco;
+
   NET_FW_PROFILE_TYPE current_profile_type() const
   {
     NET_FW_PROFILE_TYPE result{};
@@ -208,7 +173,10 @@ public:
 // -----------------------------------------------------------------------------
 
 class Rule final : public Basic_com_object<NetFwRule, INetFwRule> {
+  using Bco = Basic_com_object<NetFwRule, INetFwRule>;
 public:
+  using Bco::Bco;
+
   template<class String>
   String name() const
   {
@@ -344,65 +312,52 @@ public:
 // -----------------------------------------------------------------------------
 
 class Rules final : public Unknown_api<Rules, INetFwRules> {
+  using Ua = Unknown_api<Rules, INetFwRules>;
 public:
-  using Super = Unknown_api<Rules, INetFwRules>;
-  using Api = Super::Api;
-
-  Rules() = default;
-
-  explicit Rules(INetFwRules* const api)
-    : Super{api}
-  {}
+  using Ua::Ua;
 
   Rules& add(const Rule& rule)
   {
-    check();
-    const auto err = api()->Add(&detail::api(rule));
+    const auto err = api().Add(&detail::api(rule));
     if (err != S_OK)
-      throw Win_error{L"cannot add firewall rule", err};
+      throw Win_error{"cannot add firewall rule", err};
     return *this;
   }
 
   template<class String>
   Rules& remove(const String& name)
   {
-    check();
-    const auto err = api()->Remove(detail::bstr(name));
+    const auto err = api().Remove(detail::bstr(name));
     if (err != S_OK)
-      throw Win_error{L"cannot remove firewall rule", err};
+      throw Win_error{"cannot remove firewall rule", err};
     return *this;
   }
 
   long count() const
   {
-    check();
     long result{};
-    api()->get_Count(&result);
+    detail::api(*this).get_Count(&result);
     return result;
   }
 
   template<class String>
   Rule rule(const String& name)
   {
-    check();
     INetFwRule* rul{};
-    const auto err = api()->Item(detail::bstr(name), &rul);
-    if (err != S_OK)
-      throw Win_error{L"cannot retrieve firewall rule", err};
+    const auto err = api().Item(detail::bstr(name), &rul);
+    if (err != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) && err != S_OK)
+      throw Win_error{"cannot retrieve firewall rule", err};
     return Rule{rul};
-  }
-
-private:
-  void check() const
-  {
-    wincom::check(api(), L"invalid firewall::Rules instance used");
   }
 };
 
 // -----------------------------------------------------------------------------
 
 class Policy2 final : public Basic_com_object<NetFwPolicy2, INetFwPolicy2> {
+  using Bco = Basic_com_object<NetFwPolicy2, INetFwPolicy2>;
 public:
+  using Bco::Bco;
+
   /**
    * @param profiles A bitmask from NET_FW_PROFILE_TYPE2.
    */
@@ -423,7 +378,7 @@ public:
     const auto err = detail::api(*this)
       .get_IsRuleGroupCurrentlyEnabled(detail::bstr(group), &result);
     if (err != S_OK)
-      throw Win_error{L"cannot get firewall rule group status of current profile", err};
+      throw Win_error{"cannot get firewall rule group status of current profile", err};
     return result == VARIANT_TRUE;
   }
 
@@ -434,7 +389,7 @@ public:
     const auto err = detail::api(*this)
       .IsRuleGroupEnabled(profile, detail::bstr(group), &result);
     if (err != S_OK)
-      throw Win_error{L"cannot get firewall rule group status", err};
+      throw Win_error{"cannot get firewall rule group status", err};
     return result == VARIANT_TRUE;
   }
 

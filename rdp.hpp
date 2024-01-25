@@ -42,7 +42,7 @@ public:
   template<class String>
   String connection() const
   {
-    return detail::str<String>(*this, &IRDPSRAPIInvitation::get_ConnectionString);
+    return detail::str<String>(*this, &Api::get_ConnectionString);
   }
 };
 

@@ -24,8 +24,10 @@
 #include <unknwn.h>
 
 #include <algorithm>
+#include <new>
 #include <stdexcept>
 #include <string>
+#include <typeinfo>
 #include <type_traits>
 
 namespace dmitigr::wincom {
@@ -38,6 +40,20 @@ public:
 
   static_assert(std::is_base_of_v<IUnknown, Api>);
 
+  static Derived query(IUnknown* const unknown)
+  {
+    static const std::string msg{"cannot obtain interface "+
+      std::string{typeid(Api).name()}+" from IUnknown "+
+      "to make "+std::string{typeid(Derived).name()}};
+    if (!unknown)
+      throw std::invalid_argument{msg+": null input pointer"};
+    Api* api{};
+    unknown->QueryInterface(&api);
+    if (!api)
+      throw std::runtime_error{msg};
+    return Derived{api};
+  }
+
   virtual ~Unknown_api()
   {
     if (api_) {
@@ -46,17 +62,6 @@ public:
     }
   }
 
-  static Derived query(IUnknown* const unknown)
-  {
-    if (!unknown)
-      throw std::invalid_argument{"cannot query IUnknown: null pointer"};
-    Api* api{};
-    unknown->QueryInterface(&api);
-    assert(api);
-    return Derived{api};
-  }
-
-protected:
   Unknown_api() = default;
 
   explicit Unknown_api(Api* const api)
@@ -82,18 +87,34 @@ protected:
     swap(api_, rhs.api_);
   }
 
-  Api* api() const noexcept
+  const Api& api() const
   {
-    return api_;
+    check(api_, "invalid "+std::string{typeid(Derived).name()}+" instance used");
+    return *api_;
+  }
+
+  Api& api()
+  {
+    return const_cast<Api&>(static_cast<const Unknown_api*>(this)->api());
+  }
+
+  explicit operator bool() const noexcept
+  {
+    return static_cast<bool>(api_);
   }
 
 private:
   Api* api_{};
 };
 
+// -----------------------------------------------------------------------------
+
 template<class Object, class ObjectInterface>
 class Basic_com_object : private Noncopy {
 public:
+  using Api = ObjectInterface;
+  using Instance = Object;
+
   virtual ~Basic_com_object()
   {
     if (api_) {
@@ -103,18 +124,23 @@ public:
   }
 
   Basic_com_object()
-    : Basic_com_object{CLSCTX_INPROC_SERVER}
+    : Basic_com_object{CLSCTX_INPROC_SERVER, nullptr}
   {}
 
-  explicit Basic_com_object(const DWORD context)
+  explicit Basic_com_object(ObjectInterface* const api)
+    : api_{api}
+  {}
+
+  explicit Basic_com_object(const DWORD context_mask,
+    IUnknown* const aggregate = {})
   {
     if (const auto err = CoCreateInstance(
         __uuidof(Object),
-        nullptr, // not a part of an aggregate
-        context,
+        aggregate,
+        context_mask,
         __uuidof(ObjectInterface),
         reinterpret_cast<LPVOID*>(&api_)); err != S_OK)
-      throw Win_error{L"cannot create COM object", err};
+      throw Win_error{"cannot create COM object", err};
     if (!api_)
       throw std::logic_error{"invalid COM instance created"};
   }
@@ -140,6 +166,8 @@ public:
 
   const ObjectInterface& api() const noexcept
   {
+    check(api_,
+      "invalid "+std::string{typeid(Basic_com_object).name()}+" instance used");
     return *api_;
   }
 
@@ -149,25 +177,31 @@ public:
       static_cast<const Basic_com_object*>(this)->api());
   }
 
+  explicit operator bool() const noexcept
+  {
+    return static_cast<bool>(api_);
+  }
+
 private:
   ObjectInterface* api_{};
 };
 
+// -----------------------------------------------------------------------------
+
 namespace detail {
 
-template<class Object, class ObjectInterface>
-[[nodiscard]]
-ObjectInterface& api(const Basic_com_object<Object, ObjectInterface>& com) noexcept
+template<class ComObject>
+[[nodiscard]] auto& api(const ComObject& com) noexcept
 {
   using Com = std::decay_t<decltype(com)>;
   return const_cast<Com&>(com).api();
 }
 
 template<class String, class Wrapper, class Api>
-String str(const Wrapper& wrapper, HRESULT(Api::* getter)())
+String str(const Wrapper& wrapper, HRESULT(Api::* getter)(BSTR*))
 {
   BSTR value;
-  (detail::api(wrapper)->*getter)(&value);
+  (detail::api(wrapper).*getter)(&value);
   _bstr_t tmp{value, false}; // take ownership
   return String(tmp);
 }

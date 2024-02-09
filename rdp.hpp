@@ -69,6 +69,46 @@ public:
   }
 };
 
+class Tcp_connection_info final
+  : public Unknown_api<Tcp_connection_info, IRDPSRAPITcpConnectionInfo> {
+  using Ua = Unknown_api<Tcp_connection_info, IRDPSRAPITcpConnectionInfo>;
+public:
+  using Ua::Ua;
+
+  template<class String = std::string>
+  String local_address() const
+  {
+    return detail::str<String>(*this, &Api::get_LocalIP);
+  }
+
+  long local_port() const
+  {
+    long result{};
+    detail::api(*this).get_LocalPort(&result);
+    return result;
+  }
+
+  template<class String = std::string>
+  String remote_address() const
+  {
+    return detail::str<String>(*this, &Api::get_PeerIP);
+  }
+
+  long remote_port() const
+  {
+    long result{};
+    detail::api(*this).get_PeerPort(&result);
+    return result;
+  }
+
+  long protocol() const
+  {
+    long result{};
+    detail::api(*this).get_Protocol(&result);
+    return result;
+  }
+};
+
 class Attendee_manager final : public
   Unknown_api<Attendee_manager, IRDPSRAPIAttendeeManager> {
   using Ua = Unknown_api<Attendee_manager, IRDPSRAPIAttendeeManager>;
@@ -82,9 +122,56 @@ class Attendee final : public
 public:
   using Ua::Ua;
 
+  long id() const
+  {
+    long result{};
+    detail::api(*this).get_Id(&result);
+    return result;
+  }
+
+  Tcp_connection_info tcp_connection_info() const
+  {
+    IUnknown* info{};
+    detail::api(*this).get_ConnectivityInfo(&info);
+    check(info, "invalid attendee connectivity info retrieved from attendee");
+    try {
+      return Tcp_connection_info::query(info);
+    } catch (const std::runtime_error&) {}
+    return Tcp_connection_info{};
+  }
+
   void set_control_level(const CTRL_LEVEL level)
   {
     api().put_ControlLevel(level);
+  }
+};
+
+class Attendee_disconnect_info final : public
+  Unknown_api<Attendee_disconnect_info, IRDPSRAPIAttendeeDisconnectInfo> {
+  using Ua = Unknown_api<Attendee_disconnect_info, IRDPSRAPIAttendeeDisconnectInfo>;
+public:
+  using Ua::Ua;
+
+  Attendee attendee() const
+  {
+    IRDPSRAPIAttendee* raw{};
+    detail::api(*this).get_Attendee(&raw);
+    check(raw, "invalid attendee retrieved from attendee disconnect info");
+    return Attendee{raw};
+  }
+
+  long code() const
+  {
+    long val{};
+    detail::api(*this).get_Code(&val);
+    return val;
+  }
+
+  ATTENDEE_DISCONNECT_REASON reason() const
+  {
+    ATTENDEE_DISCONNECT_REASON val{};
+    detail::api(*this).get_Reason(&val);
+    return val;
   }
 };
 
@@ -298,7 +385,7 @@ public:
   {
     IRDPSRAPIAttendeeManager* api{};
     com().api().get_Attendees(&api);
-    check(api, "invalid IRDPSRAPIInvitationManager instance retrieved");
+    check(api, "invalid IRDPSRAPIAttendeeManager instance retrieved");
     return Attendee_manager{api};
   }
 
@@ -306,7 +393,7 @@ public:
   {
     IRDPSRAPISessionProperties* api{};
     com().api().get_Properties(&api);
-    check(api, "invalid IRDPSRAPIInvitationManager instance retrieved");
+    check(api, "invalid IRDPSRAPISessionProperties instance retrieved");
     return Session_properties{api};
   }
 

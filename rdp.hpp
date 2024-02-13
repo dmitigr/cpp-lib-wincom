@@ -28,8 +28,6 @@
 #include <algorithm>
 #include <memory>
 #include <stdexcept>
-#include <string>
-#include <type_traits>
 
 namespace dmitigr::wincom::rdp {
 
@@ -75,7 +73,7 @@ class Tcp_connection_info final
 public:
   using Ua::Ua;
 
-  template<class String = std::string>
+  template<class String>
   String local_address() const
   {
     return detail::str<String>(*this, &Api::get_LocalIP);
@@ -88,7 +86,7 @@ public:
     return result;
   }
 
-  template<class String = std::string>
+  template<class String>
   String remote_address() const
   {
     return detail::str<String>(*this, &Api::get_PeerIP);

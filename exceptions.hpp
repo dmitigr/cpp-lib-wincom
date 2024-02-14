@@ -16,8 +16,10 @@
 
 #pragma once
 
+#include <new>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace dmitigr::wincom {
 
@@ -43,6 +45,14 @@ inline void check(const T& condition, const std::string& message)
 {
   if (!static_cast<bool>(condition))
     throw std::logic_error{message};
+}
+
+inline void throw_if_error(const HRESULT err, std::string message)
+{
+  if (err == E_OUTOFMEMORY)
+    throw std::bad_alloc{};
+  else if (err != S_OK)
+    throw Win_error{std::move(message), err};
 }
 
 } // namespace dmitigr::wincom

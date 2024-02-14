@@ -18,8 +18,6 @@
 
 #include "object.hpp"
 
-#include <new>
-
 namespace dmitigr::wincom {
 
 class Enumerator final : public Unknown_api<Enumerator, IEnumVARIANT> {
@@ -37,10 +35,7 @@ public:
   {
     IEnumVARIANT* instance{};
     const auto err = detail::api(*this).Clone(&instance);
-    if (err == E_OUTOFMEMORY)
-      throw std::bad_alloc{};
-    else if (err != S_OK)
-      throw Win_error{"cannot clone Enumerator", err};
+    throw_if_error(err, "cannot clone Enumerator");
     return Enumerator{instance};
   }
 };

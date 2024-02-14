@@ -22,6 +22,7 @@
 #include <comdef.h> // avoid LNK2019
 #include <Objbase.h>
 #include <unknwn.h>
+#include <WTypes.h> // MSHCTX, MSHLFLAGS
 
 #include <algorithm>
 #include <stdexcept>
@@ -104,6 +105,24 @@ public:
 
 private:
   Api* api_{};
+};
+
+// -----------------------------------------------------------------------------
+
+class Standard_marshaler final : public
+  Unknown_api<Standard_marshaler, IMarshal> {
+  using Ua = Unknown_api<Standard_marshaler, IMarshal>;
+public:
+  Standard_marshaler(REFIID riid, const LPUNKNOWN unknown,
+    const MSHCTX dest_ctx, const MSHLFLAGS flags)
+  {
+    IMarshal* instance{};
+    const auto err = CoGetStandardMarshal(riid, unknown, dest_ctx, nullptr,
+      flags, &instance);
+    throw_if_error(err, "cannot get standard marshaler");
+    Ua tmp{instance};
+    swap(tmp);
+  }
 };
 
 // -----------------------------------------------------------------------------

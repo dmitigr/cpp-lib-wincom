@@ -33,7 +33,7 @@
 namespace dmitigr::wincom {
 
 template<class DerivedType, class ApiType>
-class Unknown_api : private Noncopy {
+class Unknown_api {
 public:
   using Api = ApiType;
   using Derived = DerivedType;
@@ -74,9 +74,23 @@ public:
     rhs.api_ = nullptr;
   }
 
+  Unknown_api(const Unknown_api& rhs) noexcept
+    : api_{rhs.api_}
+  {
+    if (api_)
+      api_->AddRef();
+  }
+
   Unknown_api& operator=(Unknown_api&& rhs) noexcept
   {
     Unknown_api tmp{std::move(rhs)};
+    swap(tmp);
+    return *this;
+  }
+
+  Unknown_api& operator=(const Unknown_api& rhs) noexcept
+  {
+    Unknown_api tmp{rhs};
     swap(tmp);
     return *this;
   }

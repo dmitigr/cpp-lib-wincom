@@ -42,6 +42,19 @@ public:
   {
     return detail::str<String>(*this, &Api::get_ConnectionString);
   }
+
+  bool is_revoked() const
+  {
+    VARIANT_BOOL result{VARIANT_FALSE};
+    detail::api(*this).get_Revoked(&result);
+    return result == VARIANT_TRUE;
+  }
+
+  void revoke(const bool value = true)
+  {
+    const VARIANT_BOOL val{value ? VARIANT_TRUE : VARIANT_FALSE};
+    api().put_Revoked(val);
+  }
 };
 
 class Invitation_manager final : public
@@ -141,6 +154,19 @@ public:
   void set_control_level(const CTRL_LEVEL level)
   {
     api().put_ControlLevel(level);
+  }
+
+  void terminate_connection()
+  {
+    api().TerminateConnection();
+  }
+
+  Invitation invitation() const
+  {
+    IRDPSRAPIInvitation* raw{};
+    detail::api(*this).get_Invitation(&raw);
+    check(raw, "invalid invitation retrieved from attendee instance");
+    return Invitation{raw};
   }
 };
 

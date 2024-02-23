@@ -78,6 +78,28 @@ public:
       throw Win_error{"cannot create IRDPSRAPIInvitation instance", err};
     return Invitation{invitation};
   }
+
+  long invitation_count() const
+  {
+    long result{};
+    detail::api(*this).get_Count(&result);
+    return result;
+  }
+
+  Invitation invitation(const long index) const
+  {
+    if (!(index < invitation_count()))
+      throw std::out_of_range{"invitation index out of range"};
+
+    IRDPSRAPIInvitation* raw{};
+    VARIANT idx{};
+    VariantInit(&idx);
+    idx.vt = VT_I4;
+    idx.lVal = index;
+    detail::api(*this).get_Item(idx, &raw);
+    check(raw, "invalid invitation retrieved from invitation manager");
+    return Invitation{raw};
+  }
 };
 
 class Tcp_connection_info final

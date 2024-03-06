@@ -34,3 +34,9 @@ set(dmitigr_wincom_headers
   rdp.hpp
   string.hpp
 )
+
+# ------------------------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------------------------
+
+set(dmitigr_libs_wincom_deps base winbase)

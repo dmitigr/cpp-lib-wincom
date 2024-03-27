@@ -32,7 +32,6 @@ set(dmitigr_wincom_headers
   exceptions.hpp
   library.hpp
   rdp.hpp
-  string.hpp
 )
 
 # ------------------------------------------------------------------------------

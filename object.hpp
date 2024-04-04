@@ -40,11 +40,19 @@ public:
 
   static_assert(std::is_base_of_v<IUnknown, Api>);
 
-  static Derived query(IUnknown* const unknown)
+  template<class U>
+  static Derived query(U* const unknown)
   {
-    static const std::string msg{"cannot obtain interface "+
-      std::string{typeid(Api).name()}+" from IUnknown "+
-      "to make "+std::string{typeid(Derived).name()}};
+    static_assert(std::is_base_of_v<IUnknown, U>);
+
+    static const std::string msg{
+      "cannot obtain interface "
+      + std::string{typeid(Api).name()}
+      + " from "
+      + std::string{typeid(U).name()}
+      + " to make "
+      + std::string{typeid(Derived).name()}};
+
     if (!unknown)
       throw std::invalid_argument{msg+": null input pointer"};
     Api* api{};
@@ -118,7 +126,32 @@ public:
   }
 
 private:
+  template<class> friend class Ptr;
+
   Api* api_{};
+};
+
+template<class A>
+class Ptr final : public Unknown_api<Ptr<A>, A> {
+  using Ua = Unknown_api<Ptr, A>;
+public:
+  using Ua::Ua;
+
+  A* get() const noexcept
+  {
+    return Ua::api_;
+  }
+
+  A* operator->() const noexcept
+  {
+    return get();
+  }
+
+  template<class T>
+  Ptr<T> to() const
+  {
+    return Ptr<T>::query(Ua::api_);
+  }
 };
 
 // -----------------------------------------------------------------------------

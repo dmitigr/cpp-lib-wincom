@@ -21,6 +21,8 @@
 #include <string>
 #include <utility>
 
+#include <Winerror.h>
+
 namespace dmitigr::wincom {
 
 class Win_error final : public std::runtime_error {

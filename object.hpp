@@ -15,6 +15,7 @@
 // limitations under the License.
 
 #pragma once
+#pragma comment(lib, "ole32")
 
 #include "../base/noncopymove.hpp"
 #include "exceptions.hpp"
@@ -262,13 +263,19 @@ template<class ComObject>
   return const_cast<Com&>(com).api();
 }
 
+template<class String>
+String str(BSTR value)
+{
+  _bstr_t tmp{value, false}; // take ownership
+  return String(tmp);
+}
+
 template<class String, class Wrapper, class Api>
 String str(const Wrapper& wrapper, HRESULT(Api::* getter)(BSTR*))
 {
   BSTR value;
   (detail::api(wrapper).*getter)(&value);
-  _bstr_t tmp{value, false}; // take ownership
-  return String(tmp);
+  return str<String>(value);
 }
 
 inline auto* c_str(const std::string& s)

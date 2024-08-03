@@ -53,9 +53,9 @@ inline void initialize_security(const PSECURITY_DESCRIPTOR sec_desc = {},
   const DWORD auth = -1,
   SOLE_AUTHENTICATION_SERVICE* const auth_services = {},
   const DWORD auth_level = RPC_C_AUTHN_LEVEL_DEFAULT,
-  const DWORD imperson_level = RPC_C_IMP_LEVEL_DEFAULT,
+  const DWORD imperson_level = RPC_C_IMP_LEVEL_IMPERSONATE,
   SOLE_AUTHENTICATION_LIST* const auth_list = {},
-  const DWORD capabilities = EOAC_DEFAULT)
+  const DWORD capabilities = EOAC_NONE)
 {
   const auto err = CoInitializeSecurity(sec_desc, auth, auth_services,
     nullptr/*reserved*/, auth_level, imperson_level, auth_list, capabilities,

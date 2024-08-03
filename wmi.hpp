@@ -19,10 +19,12 @@
 #pragma comment(lib, "wbemuuid")
 
 #include "../base/noncopymove.hpp"
+#include "../winbase/combase.hpp"
 #include "exceptions.hpp"
 #include "object.hpp"
 
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 
 #include <oaidl.h> // VARIANT
@@ -43,91 +45,105 @@ public:
       VariantClear(&data);
     }
 
-    template<class String>
-    String as_str() const
+    Value()
     {
-      if (type != CIM_STRING)
-        throw std::logic_error{"cannot get value of VARIANT as string"};
-      return detail::str<String>(data.bstrVal);
+      VariantInit(&data);
+      type = CIM_EMPTY;
     }
 
-    std::string as_string() const
+    Value(const VARIANT dat, const CIMTYPE tp, const long flv)
+      : data{dat}
+      , type{tp}
+      , flavor{flv}
+    {}
+
+    std::string as_string_utf8() const
     {
-      return as_str<std::string>();
+      check(CIM_STRING, "UTF-8 string");
+      return winbase::com::to_string(data.bstrVal);
+    }
+
+    std::string as_string_acp() const
+    {
+      check(CIM_STRING, "ACP string");
+      return winbase::com::to_string(data.bstrVal, CP_ACP);
     }
 
     std::wstring as_wstring() const
     {
-      return as_str<std::wstring>();
+      check(CIM_STRING, "UTF-16 string");
+      return winbase::com::to_wstring(data.bstrVal);
     }
 
     std::int8_t as_int8() const
     {
-      if (type != CIM_SINT8)
-        throw std::logic_error{"cannot get value of VARIANT as int8"};
+      check(CIM_SINT8, "int8");
       return static_cast<std::int8_t>(data.cVal);
     }
 
     std::uint8_t as_uint8() const
     {
-      if (type != CIM_UINT8)
-        throw std::logic_error{"cannot get value of VARIANT as uint8"};
+      check(CIM_UINT8, "uint8");
       return static_cast<std::uint8_t>(data.bVal);
     }
 
     std::int16_t as_int16() const
     {
-      if (type != CIM_SINT16)
-        throw std::logic_error{"cannot get value of VARIANT as int16"};
+      check(CIM_SINT16, "int16");
       return data.iVal;
     }
 
     std::uint16_t as_uint16() const
     {
-      if (type != CIM_UINT16)
-        throw std::logic_error{"cannot get value of VARIANT as uint16"};
+      check(CIM_UINT16, "uint16");
       return data.uiVal;
     }
 
     std::int32_t as_int32() const
     {
-      if (type != CIM_SINT32)
-        throw std::logic_error{"cannot get value of VARIANT as int32"};
+      check(CIM_SINT32, "int32");
       return data.intVal;
     }
 
     std::uint32_t as_uint32() const
     {
-      if (type != CIM_UINT32)
-        throw std::logic_error{"cannot get value of VARIANT as uint32"};
+      check(CIM_UINT32, "uint32");
       return data.uintVal;
     }
 
     std::int64_t as_int64() const
     {
-      if (type != CIM_SINT64)
-        throw std::logic_error{"cannot get value of VARIANT as int64"};
+      check(CIM_SINT64, "int64");
       return data.llVal;
     }
 
     std::uint64_t as_uint64() const
     {
-      if (type != CIM_UINT64)
-        throw std::logic_error{"cannot get value of VARIANT as uint64"};
+      check(CIM_UINT64, "uint64");
       return data.ullVal;
+    }
+
+    float as_real32() const
+    {
+      check(CIM_REAL32, "real32");
+      return data.fltVal;
+    }
+
+    double as_real64() const
+    {
+      check(CIM_REAL32, "real64");
+      return data.dblVal;
     }
 
     bool as_bool() const
     {
-      if (type != CIM_BOOLEAN)
-        throw std::logic_error{"cannot get value of VARIANT as bool"};
+      check(CIM_BOOLEAN, "bool");
       return data.boolVal == VARIANT_TRUE;
     }
 
     DATE as_date() const
     {
-      if (type != CIM_DATETIME)
-        throw std::logic_error{"cannot get value of VARIANT as DATE"};
+      check(CIM_DATETIME, "DATE");
       return data.date;
     }
 
@@ -136,12 +152,11 @@ public:
     long flavor{};
 
   private:
-    friend ClassObject;
-    Value(const VARIANT dat, const CIMTYPE tp, const long flv)
-      : data{dat}
-      , type{tp}
-      , flavor{flv}
-    {}
+    void check(const CIMTYPE tp, const std::string& tpnm) const
+    {
+      if (type != tp)
+        throw std::logic_error{"cannot get value of IWbemClassObject as "+tpnm};
+    }
   };
 
   Value value(const LPCWSTR name) const
@@ -196,10 +211,10 @@ public:
   }
 };
 
-class Locator final : public Unknown_api<Locator, IWbemLocator> {
-  using Ua = Unknown_api<Locator, IWbemLocator>;
+class Locator final : public Basic_com_object<WbemLocator, IWbemLocator> {
+  using Bco = Basic_com_object<WbemLocator, IWbemLocator>;
 public:
-  using Ua::Ua;
+  using Bco::Bco;
 
   Services connect_server(const BSTR network_resource,
     const BSTR user,
@@ -219,8 +234,8 @@ public:
       authority,
       ctx,
       &result);
-    throw_if_error(err, "cannot connect to "+
-      detail::str<std::string>(network_resource));
+    throw_if_error(err, "cannot connect to "
+      +winbase::com::to_string(network_resource));
     return Services{result};
   }
 };

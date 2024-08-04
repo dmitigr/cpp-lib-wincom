@@ -27,9 +27,7 @@
 #include <stdexcept>
 #include <string>
 
-#include <oaidl.h> // VARIANT
-#include <oleauto.h> // VariantClear
-#include <Wbemidl.h>
+#include <Wbemidl.h> // CIMTYPE
 
 namespace dmitigr::wincom::wmi {
 
@@ -39,134 +37,50 @@ class ClassObject final :
 public:
   using Ua::Ua;
 
-  struct Value final : dmitigr::Noncopymove {
-    ~Value()
+  class Property final {
+  public:
+    CIMTYPE type() const noexcept
     {
-      VariantClear(&data);
+      return type_;
     }
 
-    Value()
+    long flavor() const noexcept
     {
-      VariantInit(&data);
-      type = CIM_EMPTY;
+      return flavor_;
     }
 
-    Value(const VARIANT dat, const CIMTYPE tp, const long flv)
-      : data{dat}
-      , type{tp}
-      , flavor{flv}
-    {}
-
-    std::string as_string_utf8() const
+    const winbase::com::Variant& value() const noexcept
     {
-      check(CIM_STRING, "UTF-8 string");
-      return winbase::com::to_string(data.bstrVal);
+      return value_;
     }
-
-    std::string as_string_acp() const
-    {
-      check(CIM_STRING, "ACP string");
-      return winbase::com::to_string(data.bstrVal, CP_ACP);
-    }
-
-    std::wstring as_wstring() const
-    {
-      check(CIM_STRING, "UTF-16 string");
-      return winbase::com::to_wstring(data.bstrVal);
-    }
-
-    std::int8_t as_int8() const
-    {
-      check(CIM_SINT8, "int8");
-      return static_cast<std::int8_t>(data.cVal);
-    }
-
-    std::uint8_t as_uint8() const
-    {
-      check(CIM_UINT8, "uint8");
-      return static_cast<std::uint8_t>(data.bVal);
-    }
-
-    std::int16_t as_int16() const
-    {
-      check(CIM_SINT16, "int16");
-      return data.iVal;
-    }
-
-    std::uint16_t as_uint16() const
-    {
-      check(CIM_UINT16, "uint16");
-      return data.uiVal;
-    }
-
-    std::int32_t as_int32() const
-    {
-      check(CIM_SINT32, "int32");
-      return data.intVal;
-    }
-
-    std::uint32_t as_uint32() const
-    {
-      check(CIM_UINT32, "uint32");
-      return data.uintVal;
-    }
-
-    std::int64_t as_int64() const
-    {
-      check(CIM_SINT64, "int64");
-      return data.llVal;
-    }
-
-    std::uint64_t as_uint64() const
-    {
-      check(CIM_UINT64, "uint64");
-      return data.ullVal;
-    }
-
-    float as_real32() const
-    {
-      check(CIM_REAL32, "real32");
-      return data.fltVal;
-    }
-
-    double as_real64() const
-    {
-      check(CIM_REAL32, "real64");
-      return data.dblVal;
-    }
-
-    bool as_bool() const
-    {
-      check(CIM_BOOLEAN, "bool");
-      return data.boolVal == VARIANT_TRUE;
-    }
-
-    DATE as_date() const
-    {
-      check(CIM_DATETIME, "DATE");
-      return data.date;
-    }
-
-    VARIANT data{};
-    CIMTYPE type{};
-    long flavor{};
 
   private:
-    void check(const CIMTYPE tp, const std::string& tpnm) const
-    {
-      if (type != tp)
-        throw std::logic_error{"cannot get value of IWbemClassObject as "+tpnm};
-    }
+    friend ClassObject;
+
+    CIMTYPE type_{};
+    long flavor_{};
+    winbase::com::Variant value_;
+
+    Property(const VARIANT value, const CIMTYPE type, const long flavor)
+      : type_{type}
+      , flavor_{flavor}
+      , value_{value}
+    {}
   };
 
-  Value value(const LPCWSTR name) const
+  Property property(const LPCWSTR name) const
   {
-    VARIANT data{};
+    if (!name)
+      throw std::invalid_argument{"cannot get property of IWebClassObject:"
+        " invalid name"};
+
+    VARIANT value{};
     CIMTYPE type{};
     long flavor{};
-    const auto err = detail::api(*this).Get(name, 0, &data, &type, &flavor);
-    throw_if_error(err, "cannot get value of IWbemClassObject");
-    return Value{data, type, flavor};
+    const auto err = detail::api(*this).Get(name, 0, &value, &type, &flavor);
+    throw_if_error(err, "cannot get property "+winbase::utf16_to_utf8(name)
+      +" of IWbemClassObject");
+    return Property{value, type, flavor};
   }
 };
 

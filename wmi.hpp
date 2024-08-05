@@ -123,6 +123,25 @@ public:
       " WMI services");
     return EnumClassObject{result};
   }
+
+  /**
+   * @returns Object from the namespace associated with this instance.
+   *
+   * @param path Path of the object.
+   * @param flags Flags affectings the behavior. Must not include
+   * `WBEM_FLAG_RETURN_IMMEDIATELY`.
+   * @param ctx Additional context information.
+   */
+  ClassObject object(const BSTR path,
+    const long flags = WBEM_FLAG_RETURN_WBEM_COMPLETE,
+    IWbemContext* const ctx = {}) const
+  {
+    IWbemClassObject* result{};
+    const auto err = detail::api(*this).GetObject(path, flags, ctx, &result,
+      nullptr);
+    throw_if_error(err, "cannot get object from WMI services");
+    return ClassObject{result};
+  }
 };
 
 class Locator final : public Basic_com_object<WbemLocator, IWbemLocator> {

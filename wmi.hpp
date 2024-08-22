@@ -49,7 +49,7 @@ public:
       return flavor_;
     }
 
-    const winbase::com::Variant& value() const noexcept
+    const winbase::com::Const_variant& value() const noexcept
     {
       return value_;
     }
@@ -59,12 +59,12 @@ public:
 
     CIMTYPE type_{};
     long flavor_{};
-    winbase::com::Variant value_;
+    winbase::com::Const_variant value_;
 
     Property(const VARIANT value, const CIMTYPE type, const long flavor)
       : type_{type}
       , flavor_{flavor}
-      , value_{value}
+      , value_{value, true}
     {}
   };
 

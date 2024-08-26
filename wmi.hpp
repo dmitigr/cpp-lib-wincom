@@ -37,50 +37,23 @@ class ClassObject final :
 public:
   using Ua::Ua;
 
-  class Property final {
-  public:
-    CIMTYPE type() const noexcept
-    {
-      return type_;
-    }
-
-    long flavor() const noexcept
-    {
-      return flavor_;
-    }
-
-    const winbase::com::Const_variant& value() const noexcept
-    {
-      return value_;
-    }
-
-  private:
-    friend ClassObject;
-
-    CIMTYPE type_{};
-    long flavor_{};
-    winbase::com::Const_variant value_;
-
-    Property(const VARIANT value, const CIMTYPE type, const long flavor)
-      : type_{type}
-      , flavor_{flavor}
-      , value_{value}
-    {}
+  struct Value final {
+    CIMTYPE type{};
+    winbase::com::Variant data;
   };
 
-  Property property(const LPCWSTR name) const
+  Value value(const LPCWSTR name, long* const flavor = {}) const
   {
     if (!name)
       throw std::invalid_argument{"cannot get property of IWebClassObject:"
         " invalid name"};
 
-    VARIANT value{};
-    CIMTYPE type{};
-    long flavor{};
-    const auto err = detail::api(*this).Get(name, 0, &value, &type, &flavor);
+    Value value;
+    const auto err = detail::api(*this).Get(name, 0,
+      &value.data.data(), &value.type, flavor);
     throw_if_error(err, "cannot get property "+winbase::utf16_to_utf8(name)
       +" of IWbemClassObject");
-    return Property{value, type, flavor};
+    return value;
   }
 };
 

@@ -64,7 +64,7 @@ public:
     Property(const VARIANT value, const CIMTYPE type, const long flavor)
       : type_{type}
       , flavor_{flavor}
-      , value_{value, true}
+      , value_{value}
     {}
   };
 

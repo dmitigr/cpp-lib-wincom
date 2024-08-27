@@ -31,9 +31,9 @@
 
 namespace dmitigr::wincom::wmi {
 
-class ClassObject final :
-    public Unknown_api<ClassObject, IWbemClassObject> {
-  using Ua = Unknown_api<ClassObject, IWbemClassObject>;
+class Class_object final :
+    public Unknown_api<Class_object, IWbemClassObject> {
+  using Ua = Unknown_api<Class_object, IWbemClassObject>;
 public:
   using Ua::Ua;
 
@@ -57,22 +57,22 @@ public:
   }
 };
 
-class EnumClassObject final :
-    public Unknown_api<EnumClassObject, IEnumWbemClassObject> {
-  using Ua = Unknown_api<EnumClassObject, IEnumWbemClassObject>;
+class Enum_class_object final :
+    public Unknown_api<Enum_class_object, IEnumWbemClassObject> {
+  using Ua = Unknown_api<Enum_class_object, IEnumWbemClassObject>;
 public:
   using Ua::Ua;
 
-  ClassObject next(const long timeout = WBEM_INFINITE)
+  Class_object next(const long timeout = WBEM_INFINITE)
   {
     IWbemClassObject* result{};
     ULONG result_count{};
     const auto err = api().Next(timeout, 1, &result, &result_count);
     if (err == WBEM_S_NO_ERROR)
-      return ClassObject{result};
+      return Class_object{result};
     else if (err != WBEM_S_FALSE)
       throw_if_error(err, "cannot get next object of IEnumWbemClassObject");
-    return ClassObject{};
+    return Class_object{};
   }
 };
 
@@ -82,7 +82,7 @@ public:
   using Ua::Ua;
 
   template<class String>
-  EnumClassObject exec_query(const String& query,
+  Enum_class_object exec_query(const String& query,
     const long flags = WBEM_FLAG_RETURN_IMMEDIATELY|WBEM_FLAG_FORWARD_ONLY,
     IWbemContext* const ctx = {}) const
   {
@@ -94,7 +94,7 @@ public:
       &result);
     throw_if_error(err, "cannot execute query to retrieve objects from"
       " WMI services");
-    return EnumClassObject{result};
+    return Enum_class_object{result};
   }
 
   /**
@@ -105,7 +105,7 @@ public:
    * `WBEM_FLAG_RETURN_IMMEDIATELY`.
    * @param ctx Additional context information.
    */
-  ClassObject object(const BSTR path,
+  Class_object object(const BSTR path,
     const long flags = WBEM_FLAG_RETURN_WBEM_COMPLETE,
     IWbemContext* const ctx = {}) const
   {
@@ -113,7 +113,7 @@ public:
     const auto err = detail::api(*this).GetObject(path, flags, ctx, &result,
       nullptr);
     throw_if_error(err, "cannot get object from WMI services");
-    return ClassObject{result};
+    return Class_object{result};
   }
 };
 

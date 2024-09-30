@@ -27,7 +27,7 @@
 #include <stdexcept>
 #include <string>
 
-#include <Wbemidl.h> // CIMTYPE
+#include <Wbemidl.h>
 
 namespace dmitigr::wincom::wmi {
 

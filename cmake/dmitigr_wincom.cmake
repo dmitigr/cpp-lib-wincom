@@ -29,9 +29,14 @@ if (NOT WIN32)
 endif()
 
 set(dmitigr_wincom_headers
+  enumerator.hpp
   exceptions.hpp
+  firewall.hpp
   library.hpp
+  object.hpp
   rdp.hpp
+  tasc.hpp
+  wmi.hpp
 )
 
 # ------------------------------------------------------------------------------

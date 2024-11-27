@@ -256,6 +256,11 @@ class Event_dispatcher : public _IRDPSessionEvents, private Noncopymove {
 public:
   virtual void set_owner(void* owner) = 0;
 
+  REFIID interface_id() const noexcept
+  {
+    return __uuidof(_IRDPSessionEvents);
+  }
+
   // IUnknown overrides
 
   HRESULT QueryInterface(REFIID id, void** const object) override
@@ -351,7 +356,7 @@ public:
     else if (com_->api().QueryInterface(&point_container_) != S_OK)
       errmsg = "cannot query container for event connection point";
     else if (point_container_->FindConnectionPoint(
-        __uuidof(_IRDPSessionEvents), &point_) != S_OK)
+        event_dispatcher_->interface_id(), &point_) != S_OK)
       errmsg = "cannot find event connection point";
     else if (point_->Advise(event_dispatcher_.get(), &event_connection_token_) != S_OK)
       errmsg = "cannot get event connection token";

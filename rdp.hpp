@@ -330,10 +330,10 @@ private:
   ULONG ref_count_{};
 };
 
-template<class BasicComObject, class AdviseSink>
-class Basic_rdp_peer : private Noncopymove {
+template<class AdviseSink>
+class Advise_sink_connection : private Noncopymove {
 public:
-  virtual ~Basic_rdp_peer()
+  virtual ~Advise_sink_connection()
   {
     if (point_) {
       point_->Unadvise(sink_connection_token_);
@@ -347,20 +347,16 @@ public:
     }
   }
 
-  Basic_rdp_peer(std::unique_ptr<BasicComObject> com,
-    std::unique_ptr<AdviseSink> sink)
-    : com_{std::move(com)}
-    , sink_{std::move(sink)}
+  Advise_sink_connection(IUnknown& com, std::unique_ptr<AdviseSink> sink)
+    : sink_{std::move(sink)}
   {
     const char* errmsg{};
-    if (!com_)
-      throw std::invalid_argument{"invalid BasicComObject instance"};
-    else if (!sink_)
+    if (!sink_)
       throw std::invalid_argument{"invalid AdviseSink instance"};
-    else if (com_->api().QueryInterface(&point_container_) != S_OK)
+    else if (com.QueryInterface(&point_container_) != S_OK)
       errmsg = "cannot query interface of COM object";
-    else if (point_container_->FindConnectionPoint(
-        sink_->interface_id(), &point_) != S_OK)
+    else if (point_container_->FindConnectionPoint(sink_->interface_id(),
+        &point_) != S_OK)
       errmsg = "cannot find sink connection point of COM object";
     else if (point_->Advise(sink_.get(), &sink_connection_token_) != S_OK)
       errmsg = "cannot get sink connection token";
@@ -370,6 +366,26 @@ public:
 
     sink_->set_owner(this);
   }
+
+private:
+  std::unique_ptr<AdviseSink> sink_;
+  DWORD sink_connection_token_{};
+  IConnectionPointContainer* point_container_{};
+  IConnectionPoint* point_{};
+};
+
+class Event_dispatcher : public Advise_sink<_IRDPSessionEvents> {};
+
+template<class BasicComObject>
+class Basic_rdp_peer : private Noncopymove {
+public:
+  virtual ~Basic_rdp_peer() = default;
+
+  Basic_rdp_peer(std::unique_ptr<BasicComObject> com,
+    std::unique_ptr<Event_dispatcher> sink)
+    : com_{std::move(com)}
+    , sink_{com_->api(), std::move(sink)}
+  {}
 
   const BasicComObject& com() const noexcept
   {
@@ -383,18 +399,14 @@ public:
 
 private:
   std::unique_ptr<BasicComObject> com_;
-  std::unique_ptr<AdviseSink> sink_;
-  DWORD sink_connection_token_{};
-  IConnectionPointContainer* point_container_{};
-  IConnectionPoint* point_{};
+  Advise_sink_connection<Event_dispatcher> sink_;
 };
 
 using Viewer = Basic_com_object<RDPViewer, IRDPSRAPIViewer>;
 using Sharer = Basic_com_object<RDPSession, IRDPSRAPISharingSession>;
 
-class Event_dispatcher : public Advise_sink<_IRDPSessionEvents> {};
-using Client_base = Basic_rdp_peer<Viewer, Event_dispatcher>;
-using Server_base = Basic_rdp_peer<Sharer, Event_dispatcher>;
+using Client_base = Basic_rdp_peer<Viewer>;
+using Server_base = Basic_rdp_peer<Sharer>;
 
 // -----------------------------------------------------------------------------
 // Server

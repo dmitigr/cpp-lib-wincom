@@ -27,6 +27,10 @@
 
 namespace dmitigr::wincom::rdpts {
 
+// -----------------------------------------------------------------------------
+// Advanced_settings
+// -----------------------------------------------------------------------------
+
 class Advanced_settings final
   : public Unknown_api<Advanced_settings, MSTSCLib::IMsRdpClientAdvancedSettings8> {
   using Ua = Unknown_api<Advanced_settings, MSTSCLib::IMsRdpClientAdvancedSettings8>;
@@ -87,12 +91,20 @@ public:
   }
 };
 
+// -----------------------------------------------------------------------------
+// Client
+// -----------------------------------------------------------------------------
+
+class Client_event_dispatcher : public Advise_sink<MSTSCLib::IMsTscAxEvents> {};
+
 class Client final : public Basic_com_object<
   MSTSCLib::MsRdpClient11NotSafeForScripting, MSTSCLib::IMsRdpClient10> {
   using Bco = Basic_com_object<MSTSCLib::MsRdpClient11NotSafeForScripting,
     MSTSCLib::IMsRdpClient10>;
 public:
   using Bco::Bco;
+
+  using Event_dispatcher = Client_event_dispatcher;
 
   ~Client()
   {
@@ -101,7 +113,8 @@ public:
     } catch (...) {}
   }
 
-  Client()
+  explicit Client(std::unique_ptr<Event_dispatcher> sink)
+    : sink_{api(), std::move(sink), this}
   {
     /*
      * Closing a window in which this ActiveX object is hosted leads to
@@ -209,6 +222,12 @@ public:
 
   // MsRdpClient9NotSafeForScripting
 
+  /**
+   * @remarks This method:
+   *   - will throw if not logged into the user session;
+   *   - may throw until some amount of time have elapsed after logging into
+   *   the user session.
+   */
   void update_session_display_settings(const ULONG desktop_width,
     const ULONG desktop_height, const ULONG physical_width,
     const ULONG physical_height, const ULONG orientation,
@@ -227,6 +246,15 @@ public:
     }();
     throw_if_error(err, "cannot update RDP session display settings");
   }
+
+  void sync_session_display_settings()
+  {
+    const auto err = api().SyncSessionDisplaySettings();
+    throw_if_error(err, "cannot synchronize RDP session display settings");
+  }
+
+private:
+  Advise_sink_connection<Event_dispatcher> sink_;
 };
 
 } // namespace dmitigr::wincom::rdpts

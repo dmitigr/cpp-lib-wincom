@@ -264,7 +264,7 @@ public:
     std::unique_ptr<Event_dispatcher> sink)
     : com_{forward_or_throw<std::invalid_argument>(std::move(com),
       "Basic_rdp_peer(com)")}
-    , sink_{com_->api(), std::move(sink)}
+    , sink_{com_->api(), std::move(sink), this}
   {}
 
   const BasicComObject& com() const noexcept

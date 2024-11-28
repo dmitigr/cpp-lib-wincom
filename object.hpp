@@ -347,7 +347,8 @@ public:
     }
   }
 
-  Advise_sink_connection(IUnknown& com, std::unique_ptr<AdviseSink> sink)
+  Advise_sink_connection(IUnknown& com, std::unique_ptr<AdviseSink> sink,
+    void* const sink_owner)
     : sink_{std::move(sink)}
   {
     const char* errmsg{};
@@ -364,7 +365,7 @@ public:
     if (errmsg)
       throw std::runtime_error{errmsg};
 
-    sink_->set_owner(this);
+    sink_->set_owner(sink_owner);
   }
 
 private:

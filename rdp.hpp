@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "../base/contract.hpp"
 #include "../winbase/windows.hpp"
 #include "exceptions.hpp"
 #include "object.hpp"
@@ -28,8 +29,6 @@
 #include <algorithm>
 #include <memory>
 #include <stdexcept>
-
-#include <type_traits>
 
 namespace dmitigr::wincom::rdp {
 
@@ -254,126 +253,6 @@ public:
 
 // -----------------------------------------------------------------------------
 
-template<class ComInterface>
-class Advise_sink : public ComInterface, private Noncopymove {
-  static_assert(std::is_base_of_v<IDispatch, ComInterface>);
-public:
-  virtual void set_owner(void* owner) = 0;
-
-  REFIID interface_id() const noexcept
-  {
-    return __uuidof(ComInterface);
-  }
-
-  // IUnknown overrides
-
-  HRESULT QueryInterface(REFIID id, void** const object) override
-  {
-    if (!object)
-      return E_POINTER;
-
-    if (id == __uuidof(ComInterface))
-      *object = static_cast<ComInterface*>(this);
-    else if (id == __uuidof(IDispatch))
-      *object = static_cast<IDispatch*>(this);
-    else if (id == __uuidof(IUnknown))
-      *object = static_cast<IUnknown*>(this);
-    else {
-      *object = nullptr;
-      return E_NOINTERFACE;
-    }
-
-    AddRef();
-    return S_OK;
-  }
-
-  ULONG AddRef() override
-  {
-    return ++ref_count_;
-  }
-
-  ULONG Release() override
-  {
-    return ref_count_ = std::max(--ref_count_, ULONG(0));
-  }
-
-  // IDispatch overrides
-
-  HRESULT GetTypeInfoCount(UINT* const info) override
-  {
-    *info = 0;
-    return S_OK;
-  }
-
-  HRESULT GetTypeInfo(const UINT info, const LCID cid,
-    ITypeInfo** const tinfo) override
-  {
-    if (info)
-      return DISP_E_BADINDEX;
-
-    *tinfo = nullptr;
-    return S_OK;
-  }
-
-  HRESULT GetIDsOfNames(REFIID riid, LPOLESTR* const names,
-    const UINT name_count, const LCID cid, DISPID* const disp_id) override
-  {
-    if (!disp_id)
-      return E_OUTOFMEMORY;
-
-    for (UINT i{}; i < name_count; ++i)
-      disp_id[i] = DISPID_UNKNOWN;
-    return DISP_E_UNKNOWNNAME;
-  }
-
-private:
-  ULONG ref_count_{};
-};
-
-template<class AdviseSink>
-class Advise_sink_connection : private Noncopymove {
-public:
-  virtual ~Advise_sink_connection()
-  {
-    if (point_) {
-      point_->Unadvise(sink_connection_token_);
-      point_->Release();
-      point_ = nullptr;
-    }
-
-    if (point_container_) {
-      point_container_->Release();
-      point_container_ = nullptr;
-    }
-  }
-
-  Advise_sink_connection(IUnknown& com, std::unique_ptr<AdviseSink> sink)
-    : sink_{std::move(sink)}
-  {
-    const char* errmsg{};
-    if (!sink_)
-      throw std::invalid_argument{"invalid AdviseSink instance"};
-    else if (com.QueryInterface(&point_container_) != S_OK)
-      errmsg = "cannot query interface of COM object";
-    else if (point_container_->FindConnectionPoint(sink_->interface_id(),
-        &point_) != S_OK)
-      errmsg = "cannot find sink connection point of COM object";
-    else if (point_->Advise(sink_.get(), &sink_connection_token_) != S_OK)
-      errmsg = "cannot get sink connection token";
-
-    if (errmsg)
-      throw std::runtime_error{errmsg};
-
-    sink_->set_owner(this);
-  }
-
-private:
-  std::unique_ptr<AdviseSink> sink_;
-  DWORD sink_connection_token_{};
-  IConnectionPointContainer* point_container_{};
-  IConnectionPoint* point_{};
-};
-
 class Event_dispatcher : public Advise_sink<_IRDPSessionEvents> {};
 
 template<class BasicComObject>
@@ -383,7 +262,8 @@ public:
 
   Basic_rdp_peer(std::unique_ptr<BasicComObject> com,
     std::unique_ptr<Event_dispatcher> sink)
-    : com_{std::move(com)}
+    : com_{forward_or_throw<std::invalid_argument>(std::move(com),
+      "Basic_rdp_peer(com)")}
     , sink_{com_->api(), std::move(sink)}
   {}
 
@@ -394,7 +274,8 @@ public:
 
   BasicComObject& com() noexcept
   {
-    return const_cast<BasicComObject&>(static_cast<const Basic_rdp_peer*>(this)->com());
+    return const_cast<BasicComObject&>(
+      static_cast<const Basic_rdp_peer*>(this)->com());
   }
 
 private:

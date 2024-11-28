@@ -21,17 +21,23 @@
 #include "exceptions.hpp"
 
 #include <comdef.h> // avoid LNK2019
+#include <ocidl.h>
 #include <Objbase.h>
 #include <unknwn.h>
 #include <WTypes.h> // MSHCTX, MSHLFLAGS
 
 #include <algorithm>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
 #include <type_traits>
 
 namespace dmitigr::wincom {
+
+// -----------------------------------------------------------------------------
+// Unknown_api
+// -----------------------------------------------------------------------------
 
 template<class DerivedType, class ApiType>
 class Unknown_api {
@@ -132,6 +138,10 @@ private:
   Api* api_{};
 };
 
+// -----------------------------------------------------------------------------
+// Ptr
+// -----------------------------------------------------------------------------
+
 template<class A>
 class Ptr final : public Unknown_api<Ptr<A>, A> {
   using Ua = Unknown_api<Ptr, A>;
@@ -155,6 +165,8 @@ public:
   }
 };
 
+// -----------------------------------------------------------------------------
+// Basic_com_object
 // -----------------------------------------------------------------------------
 
 template<class Object, class ObjectInterface>
@@ -234,6 +246,136 @@ private:
   ObjectInterface* api_{};
 };
 
+// -----------------------------------------------------------------------------
+// Advise_sink
+// -----------------------------------------------------------------------------
+
+template<class ComInterface>
+class Advise_sink : public ComInterface, private Noncopymove {
+  static_assert(std::is_base_of_v<IDispatch, ComInterface>);
+public:
+  virtual void set_owner(void* owner) = 0;
+
+  REFIID interface_id() const noexcept
+  {
+    return __uuidof(ComInterface);
+  }
+
+  // IUnknown overrides
+
+  HRESULT QueryInterface(REFIID id, void** const object) override
+  {
+    if (!object)
+      return E_POINTER;
+
+    if (id == __uuidof(ComInterface))
+      *object = static_cast<ComInterface*>(this);
+    else if (id == __uuidof(IDispatch))
+      *object = static_cast<IDispatch*>(this);
+    else if (id == __uuidof(IUnknown))
+      *object = static_cast<IUnknown*>(this);
+    else {
+      *object = nullptr;
+      return E_NOINTERFACE;
+    }
+
+    AddRef();
+    return S_OK;
+  }
+
+  ULONG AddRef() override
+  {
+    return ++ref_count_;
+  }
+
+  ULONG Release() override
+  {
+    return ref_count_ = std::max(--ref_count_, ULONG(0));
+  }
+
+  // IDispatch overrides
+
+  HRESULT GetTypeInfoCount(UINT* const info) override
+  {
+    *info = 0;
+    return S_OK;
+  }
+
+  HRESULT GetTypeInfo(const UINT info, const LCID cid,
+    ITypeInfo** const tinfo) override
+  {
+    if (info)
+      return DISP_E_BADINDEX;
+
+    *tinfo = nullptr;
+    return S_OK;
+  }
+
+  HRESULT GetIDsOfNames(REFIID riid, LPOLESTR* const names,
+    const UINT name_count, const LCID cid, DISPID* const disp_id) override
+  {
+    if (!disp_id)
+      return E_OUTOFMEMORY;
+
+    for (UINT i{}; i < name_count; ++i)
+      disp_id[i] = DISPID_UNKNOWN;
+    return DISP_E_UNKNOWNNAME;
+  }
+
+private:
+  ULONG ref_count_{};
+};
+
+// -----------------------------------------------------------------------------
+// Advise_sink_connection
+// -----------------------------------------------------------------------------
+
+template<class AdviseSink>
+class Advise_sink_connection : private Noncopymove {
+public:
+  virtual ~Advise_sink_connection()
+  {
+    if (point_) {
+      point_->Unadvise(sink_connection_token_);
+      point_->Release();
+      point_ = nullptr;
+    }
+
+    if (point_container_) {
+      point_container_->Release();
+      point_container_ = nullptr;
+    }
+  }
+
+  Advise_sink_connection(IUnknown& com, std::unique_ptr<AdviseSink> sink)
+    : sink_{std::move(sink)}
+  {
+    const char* errmsg{};
+    if (!sink_)
+      throw std::invalid_argument{"invalid AdviseSink instance"};
+    else if (com.QueryInterface(&point_container_) != S_OK)
+      errmsg = "cannot query interface of COM object";
+    else if (point_container_->FindConnectionPoint(sink_->interface_id(),
+        &point_) != S_OK)
+      errmsg = "cannot find sink connection point of COM object";
+    else if (point_->Advise(sink_.get(), &sink_connection_token_) != S_OK)
+      errmsg = "cannot get sink connection token";
+
+    if (errmsg)
+      throw std::runtime_error{errmsg};
+
+    sink_->set_owner(this);
+  }
+
+private:
+  std::unique_ptr<AdviseSink> sink_;
+  DWORD sink_connection_token_{};
+  IConnectionPointContainer* point_container_{};
+  IConnectionPoint* point_{};
+};
+
+// -----------------------------------------------------------------------------
+// Standard_marshaler
 // -----------------------------------------------------------------------------
 
 class Standard_marshaler final : public

@@ -64,7 +64,8 @@ public:
   void set_smart_sizing_enabled(const bool value)
   {
     const VARIANT_BOOL val{value ? VARIANT_TRUE : VARIANT_FALSE};
-    api().put_SmartSizing(val);
+    const auto err = api().put_SmartSizing(val);
+    throw_if_error(err, "cannot set smart sizing enabled");
   }
 
   bool is_smart_sizing_enabled() const noexcept
@@ -168,6 +169,38 @@ public:
   String user_name() const
   {
     return detail::str<String>(*this, &Api::get_UserName);
+  }
+
+  void set_prompt_for_credentials_enabled(const bool value)
+  {
+    const VARIANT_BOOL val{value ? VARIANT_TRUE : VARIANT_FALSE};
+    const auto err = api<MSTSCLib::IMsRdpClientNonScriptable3>()
+      .put_PromptForCredentials(val);
+    throw_if_error(err, "cannot set PromptForCredentials property of RDP client");
+  }
+
+  bool is_prompt_for_credentials_enabled() const noexcept
+  {
+    VARIANT_BOOL result{VARIANT_FALSE};
+    detail::unconst(api<MSTSCLib::IMsRdpClientNonScriptable3>())
+      .get_PromptForCredentials(&result);
+    return result == VARIANT_TRUE;
+  }
+
+  void set_prompt_for_credentials_on_client_enabled(const bool value)
+  {
+    const VARIANT_BOOL val{value ? VARIANT_TRUE : VARIANT_FALSE};
+    const auto err = api<MSTSCLib::IMsRdpClientNonScriptable4>()
+      .put_PromptForCredsOnClient(val);
+    throw_if_error(err, "cannot set PromptForCredsOnClient property of RDP client");
+  }
+
+  bool is_prompt_for_credentials_on_client_enabled() const noexcept
+  {
+    VARIANT_BOOL result{VARIANT_FALSE};
+    detail::unconst(api<MSTSCLib::IMsRdpClientNonScriptable4>())
+      .get_PromptForCredsOnClient(&result);
+    return result == VARIANT_TRUE;
   }
 
   void set_desktop_height(const LONG value)

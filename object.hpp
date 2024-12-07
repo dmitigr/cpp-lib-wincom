@@ -237,6 +237,26 @@ public:
       static_cast<const Basic_com_object*>(this)->api());
   }
 
+  template<class T>
+  const T& api() const
+  {
+    T* result{};
+    const_cast<ObjectInterface&>(api()).QueryInterface(&result);
+    if (!result)
+      throw std::runtime_error{"cannot obtain interface "
+        + std::string{typeid(T).name()}
+        + " from "
+        + std::string{typeid(Api).name()}};
+    return *result;
+  }
+
+  template<class T>
+  T& api()
+  {
+    return const_cast<T&>(
+      static_cast<const Basic_com_object*>(this)->api<T>());
+  }
+
   explicit operator bool() const noexcept
   {
     return static_cast<bool>(api_);
@@ -404,6 +424,12 @@ template<class ComObject>
 {
   using Com = std::decay_t<decltype(com)>;
   return const_cast<Com&>(com).api();
+}
+
+template<typename T>
+[[nodiscard]] T& unconst(const T& obj) noexcept
+{
+  return const_cast<T&>(obj);
 }
 
 template<class String, class Wrapper, class Api>

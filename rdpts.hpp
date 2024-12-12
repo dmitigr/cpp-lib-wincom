@@ -47,6 +47,21 @@ public:
     prompted = 2
   };
 
+  enum class Network_connection_type : UINT {
+    /// 56 Kbps.
+    modem = 1,
+    /// 256 Kbps to 2 Mbps.
+    low = 2,
+    /// 2 Mbps to 16 Mbps, with high latency.
+    satellite = 3,
+    /// 2 Mbps to 10 Mbps.
+    broadband_high = 4,
+    /// 10 Mbps or higher, with high latency.
+    wan = 5,
+    /// 10 Mbps or higher.
+    lan = 6
+  };
+
   // IMsRdpClientAdvancedSettings
 
   void set_rdp_port(const LONG value)
@@ -156,12 +171,26 @@ public:
     throw_if_error(err, "cannot set auto reconnect enabled");
   }
 
-  bool is_auto_reconnect_enabled() const noexcept
+  bool is_auto_reconnect_enabled() const
   {
     VARIANT_BOOL result{VARIANT_FALSE};
     const auto err = detail::api(*this).get_EnableAutoReconnect(&result);
     throw_if_error(err, "cannot get auto reconnect enabled");
     return result == VARIANT_TRUE;
+  }
+
+  void set_max_reconnect_attempts(const LONG value)
+  {
+    const auto err = detail::api(*this).put_MaxReconnectAttempts(value);
+    throw_if_error(err, "cannot set max reconnect attempts");
+  }
+
+  LONG max_reconnect_attempts() const
+  {
+    LONG result{};
+    const auto err = detail::api(*this).get_MaxReconnectAttempts(&result);
+    throw_if_error(err, "cannot get max reconnect attempts");
+    return result;
   }
 
   // IMsRdpClientAdvancedSettings4
@@ -173,11 +202,37 @@ public:
     throw_if_error(err, "cannot set authentication level");
   }
 
+  void set(const Server_authentication value)
+  {
+    set_authentication_level(value);
+  }
+
   Server_authentication authentication_level() const
   {
     UINT result{};
     detail::api(*this).get_AuthenticationLevel(&result);
     return Server_authentication{result};
+  }
+
+  // IMsRdpClientAdvancedSettings7
+
+  void set_network_connection_type(const Network_connection_type value)
+  {
+    const auto err = api().put_NetworkConnectionType(
+      static_cast<std::underlying_type_t<Network_connection_type>>(value));
+    throw_if_error(err, "cannot set network connection type");
+  }
+
+  void set(const Network_connection_type value)
+  {
+    set_network_connection_type(value);
+  }
+
+  Network_connection_type network_connection_type() const
+  {
+    UINT result{};
+    detail::api(*this).get_NetworkConnectionType(&result);
+    return Network_connection_type{result};
   }
 };
 

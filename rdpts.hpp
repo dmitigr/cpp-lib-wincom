@@ -20,6 +20,7 @@
 #include "exceptions.hpp"
 #include "object.hpp"
 
+#include <chrono>
 #include <type_traits>
 
 #import "libid:8C11EFA1-92C3-11D1-BC1E-00C04FA31489"
@@ -72,6 +73,94 @@ public:
   {
     VARIANT_BOOL result{VARIANT_FALSE};
     detail::api(*this).get_SmartSizing(&result);
+    return result == VARIANT_TRUE;
+  }
+
+  void set_overall_connection_timeout(const std::chrono::seconds value)
+  {
+    const auto err = api().put_overallConnectionTimeout(value.count());
+    throw_if_error(err, "cannot set overall connection timeout");
+  }
+
+  std::chrono::seconds overall_connection_timeout() const
+  {
+    LONG result{};
+    const auto err = detail::api(*this).get_overallConnectionTimeout(&result);
+    throw_if_error(err, "cannot get overall connection timeout");
+    return std::chrono::seconds{result};
+  }
+
+  void set_single_connection_timeout(const std::chrono::seconds value)
+  {
+    const auto err = api().put_singleConnectionTimeout(value.count());
+    throw_if_error(err, "cannot set single connection timeout");
+  }
+
+  std::chrono::seconds single_connection_timeout() const
+  {
+    LONG result{};
+    const auto err = detail::api(*this).get_singleConnectionTimeout(&result);
+    throw_if_error(err, "cannot get single connection timeout");
+    return std::chrono::seconds{result};
+  }
+
+  void set_shutdown_timeout(const std::chrono::seconds value)
+  {
+    const auto err = api().put_shutdownTimeout(value.count());
+    throw_if_error(err, "cannot set shutdown timeout");
+  }
+
+  std::chrono::seconds shutdown_timeout() const
+  {
+    LONG result{};
+    const auto err = detail::api(*this).get_shutdownTimeout(&result);
+    throw_if_error(err, "cannot get shutdown timeout");
+    return std::chrono::seconds{result};
+  }
+
+  void set_idle_timeout(const std::chrono::minutes value)
+  {
+    const auto err = api().put_MinutesToIdleTimeout(value.count());
+    throw_if_error(err, "cannot set idle timeout");
+  }
+
+  std::chrono::minutes idle_timeout() const
+  {
+    LONG result{};
+    const auto err = detail::api(*this).get_MinutesToIdleTimeout(&result);
+    throw_if_error(err, "cannot get idle timeout");
+    return std::chrono::minutes{result};
+  }
+
+  /// @param value The minimum valid value is `10000`.
+  void set_keep_alive_interval(const std::chrono::milliseconds value)
+  {
+    const auto err = api().put_keepAliveInterval(value.count());
+    throw_if_error(err, "cannot set keep-alive interval");
+  }
+
+  std::chrono::milliseconds keep_alive_interval() const
+  {
+    LONG result{};
+    const auto err = detail::api(*this).get_keepAliveInterval(&result);
+    throw_if_error(err, "cannot get keep-alive interval");
+    return std::chrono::milliseconds{result};
+  }
+
+  // IMsRdpClientAdvancedSettings2
+
+  void set_auto_reconnect_enabled(const bool value)
+  {
+    const VARIANT_BOOL val{value ? VARIANT_TRUE : VARIANT_FALSE};
+    const auto err = api().put_EnableAutoReconnect(val);
+    throw_if_error(err, "cannot set auto reconnect enabled");
+  }
+
+  bool is_auto_reconnect_enabled() const noexcept
+  {
+    VARIANT_BOOL result{VARIANT_FALSE};
+    const auto err = detail::api(*this).get_EnableAutoReconnect(&result);
+    throw_if_error(err, "cannot get auto reconnect enabled");
     return result == VARIANT_TRUE;
   }
 
@@ -284,6 +373,27 @@ public:
   {
     const auto err = api().SyncSessionDisplaySettings();
     throw_if_error(err, "cannot synchronize RDP session display settings");
+  }
+
+  // IMsRdpClient7
+
+  template<class String>
+  String status_text(const UINT status_code) const
+  {
+    return String(detail::api(*this).GetStatusText(status_code));
+  }
+
+  // IMsRdpExtendedSettings
+
+  void set_property_disable_auto_reconnect_component(const bool value)
+  {
+    VARIANT val{};
+    VariantInit(&val);
+    val.vt = VT_BOOL;
+    val.boolVal = value ? VARIANT_TRUE : VARIANT_FALSE;
+    const auto err = api<MSTSCLib::IMsRdpExtendedSettings>()
+      .put_Property(detail::bstr("DisableAutoReconnectComponent"), &val);
+    throw_if_error(err, "cannot disable auto reconnect component");
   }
 
 private:

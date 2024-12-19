@@ -214,6 +214,23 @@ public:
     return Server_authentication{result};
   }
 
+  // IMsRdpClientAdvancedSettings5
+
+  void set_redirect_clipboard_enabled(const bool value)
+  {
+    const VARIANT_BOOL val{value ? VARIANT_TRUE : VARIANT_FALSE};
+    const auto err = api().put_RedirectClipboard(val);
+    throw_if_error(err, "cannot set redirect clipboard enabled");
+  }
+
+  bool is_redirect_clipboard_enabled() const
+  {
+    VARIANT_BOOL result{VARIANT_FALSE};
+    const auto err = detail::api(*this).get_RedirectClipboard(&result);
+    throw_if_error(err, "cannot get redirect clipboard enabled");
+    return result == VARIANT_TRUE;
+  }
+
   // IMsRdpClientAdvancedSettings7
 
   void set_network_connection_type(const Network_connection_type value)

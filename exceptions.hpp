@@ -63,12 +63,12 @@ inline void throw_if_error(const HRESULT err, std::string message)
 
 } // namespace dmitigr::wincom
 
-#define DMITIGR_WINCOM_THROW_IF_ERROR(err, msg)     \
-  do {                                              \
-    if (FAILED(err)) {                              \
-      if (err == E_OUTOFMEMORY)                     \
-        throw std::bad_alloc{};                     \
-      else                                          \
-        throw Win_error{std::move(msg), err};       \
-    }                                               \
+#define DMITIGR_WINCOM_THROW_IF_ERROR(err, msg) \
+  do {                                          \
+    if (const HRESULT e{err}; FAILED(e)) {      \
+      if (e == E_OUTOFMEMORY)                   \
+        throw std::bad_alloc{};                 \
+      else                                      \
+        throw Win_error{std::move(msg), e};     \
+    }                                           \
   } while (false)

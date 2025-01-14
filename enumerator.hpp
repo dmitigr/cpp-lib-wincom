@@ -35,7 +35,7 @@ public:
   {
     IEnumVARIANT* instance{};
     const auto err = detail::api(*this).Clone(&instance);
-    throw_if_error(err, "cannot clone Enumerator");
+    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot clone Enumerator");
     return Enumerator{instance};
   }
 };

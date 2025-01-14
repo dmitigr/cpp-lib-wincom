@@ -63,8 +63,8 @@ inline void initialize_security(const PSECURITY_DESCRIPTOR sec_desc = {},
   if (err == RPC_E_TOO_LATE)
     return;
   else
-    throw_if_error(err, "cannot register security and set the default security"
-      " values for the process");
+    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot register security and set the"
+      " default security values for the process");
 }
 
 /**
@@ -88,8 +88,8 @@ inline void set_proxy_blanket(IUnknown* const proxy,
 {
   const auto err = CoSetProxyBlanket(proxy, authn, authz, server_princ_name,
     authn_level, imperson_level, auth_info, capabilities);
-  throw_if_error(err, "cannot sets the authentication info that will be used"
-    " to make calls on the specified proxy");
+  DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot sets the authentication info that"
+    " will be used to make calls on the specified proxy");
 }
 
 } // namespace dmitigr::wincom

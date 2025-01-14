@@ -36,6 +36,23 @@
 
 namespace dmitigr::wincom {
 
+template<class T, class A>
+T& query_interface(A& api)
+{
+  using D = std::decay_t<T>;
+  if constexpr (!std::is_same_v<D, A>) {
+    D* result{};
+    api.QueryInterface(&result);
+    if (!result)
+      throw std::runtime_error{"cannot obtain interface "
+        + std::string{typeid(D).name()}
+        + " from "
+        + std::string{typeid(A).name()}};
+    return *result;
+  } else
+    return api;
+}
+
 // -----------------------------------------------------------------------------
 // Unknown_api
 // -----------------------------------------------------------------------------
@@ -117,15 +134,17 @@ public:
     swap(api_, rhs.api_);
   }
 
-  const Api& api() const
+  template<class T = Api>
+  const T& api() const
   {
     check(api_, "invalid "+std::string{typeid(Derived).name()}+" instance used");
-    return *api_;
+    return query_interface<T>(const_cast<Api&>(*api_));
   }
 
-  Api& api()
+  template<class T = Api>
+  T& api()
   {
-    return const_cast<Api&>(static_cast<const Unknown_api*>(this)->api());
+    return const_cast<T&>(static_cast<const Unknown_api*>(this)->api<T>());
   }
 
   explicit operator bool() const noexcept
@@ -225,37 +244,18 @@ public:
     swap(api_, rhs.api_);
   }
 
-  const ObjectInterface& api() const noexcept
-  {
-    check(api_,
-      "invalid "+std::string{typeid(Basic_com_object).name()}+" instance used");
-    return *api_;
-  }
-
-  ObjectInterface& api() noexcept
-  {
-    return const_cast<ObjectInterface&>(
-      static_cast<const Basic_com_object*>(this)->api());
-  }
-
-  template<class T>
+  template<class T = Api>
   const T& api() const
   {
-    T* result{};
-    const_cast<ObjectInterface&>(api()).QueryInterface(&result);
-    if (!result)
-      throw std::runtime_error{"cannot obtain interface "
-        + std::string{typeid(T).name()}
-        + " from "
-        + std::string{typeid(Api).name()}};
-    return *result;
+    check(api_, "invalid "
+      +std::string{typeid(Basic_com_object).name()}+" instance used");
+    return query_interface<T>(const_cast<ObjectInterface&>(*api_));
   }
 
-  template<class T>
+  template<class T = Api>
   T& api()
   {
-    return const_cast<T&>(
-      static_cast<const Basic_com_object*>(this)->api<T>());
+    return const_cast<T&>(static_cast<const Basic_com_object*>(this)->api<T>());
   }
 
   explicit operator bool() const noexcept
@@ -410,7 +410,7 @@ public:
     IMarshal* instance{};
     const auto err = CoGetStandardMarshal(riid, unknown, dest_ctx, nullptr,
       flags, &instance);
-    throw_if_error(err, "cannot get standard marshaler");
+    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot get standard marshaler");
     Ua tmp{instance};
     swap(tmp);
   }
@@ -420,11 +420,17 @@ public:
 
 namespace detail {
 
-template<class ComObject>
-[[nodiscard]] auto& api(const ComObject& com) noexcept
+template<class Api, class ComObject>
+[[nodiscard]] auto& api(const ComObject& com)
 {
   using Com = std::decay_t<decltype(com)>;
-  return const_cast<Com&>(com).api();
+  return const_cast<Com&>(com).api<Api>();
+}
+
+template<class ComObject>
+[[nodiscard]] auto& api(const ComObject& com)
+{
+  return api<typename ComObject::Api>(com);
 }
 
 template<typename T>
@@ -437,7 +443,7 @@ template<class String, class Wrapper, class Api>
 String str(const Wrapper& wrapper, HRESULT(Api::* getter)(BSTR*))
 {
   BSTR value;
-  (detail::api(wrapper).*getter)(&value);
+  (detail::api<Api>(wrapper).*getter)(&value);
   _bstr_t tmp{value, false}; // take ownership
   return String(tmp);
 }
@@ -478,7 +484,7 @@ void set(const char* const what,
   const Wrapper& wrapper, HRESULT(Api::* setter)(VARIANT_BOOL),
   const bool value)
 {
-  const auto err = (api(wrapper).*setter)(variant_bool(value));
+  const auto err = (api<Api>(wrapper).*setter)(variant_bool(value));
   DMITIGR_WINCOM_THROW_IF_ERROR(err, std::string{"cannot set "}.append(what));
 }
 
@@ -487,7 +493,7 @@ bool get(const char* const what,
   const Wrapper& wrapper, HRESULT(Api::* getter)(VARIANT_BOOL*))
 {
   VARIANT_BOOL result{VARIANT_FALSE};
-  const auto err = (api(wrapper).*getter)(&result);
+  const auto err = (api<Api>(wrapper).*getter)(&result);
   DMITIGR_WINCOM_THROW_IF_ERROR(err, std::string{"cannot get "}.append(what));
   return result == VARIANT_TRUE;
 }

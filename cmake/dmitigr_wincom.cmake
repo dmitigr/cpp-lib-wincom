@@ -44,3 +44,15 @@ set(dmitigr_wincom_headers
 # ------------------------------------------------------------------------------
 
 set(dmitigr_libs_wincom_deps base winbase)
+
+# ------------------------------------------------------------------------------
+# Tests
+# ------------------------------------------------------------------------------
+
+if(DMITIGR_LIBS_TESTS)
+  set(CMAKE_CXX_STANDARD 20)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+  set(dmitigr_wincom_tests firewall)
+  set(dmitigr_wincom_tests_target_link_libraries dmitigr_base)
+endif()

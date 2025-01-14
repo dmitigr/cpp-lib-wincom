@@ -50,25 +50,14 @@ inline void check(const T& condition, const std::string& message)
     throw std::logic_error{message};
 }
 
-[[deprecated]]
-inline void throw_if_error(const HRESULT err, std::string message)
-{
-  if (FAILED(err)) {
-    if (err == E_OUTOFMEMORY)
-      throw std::bad_alloc{};
-    else
-      throw Win_error{std::move(message), err};
-  }
-}
-
 } // namespace dmitigr::wincom
 
-#define DMITIGR_WINCOM_THROW_IF_ERROR(err, msg) \
-  do {                                          \
-    if (const HRESULT e{err}; FAILED(e)) {      \
-      if (e == E_OUTOFMEMORY)                   \
-        throw std::bad_alloc{};                 \
-      else                                      \
-        throw Win_error{std::move(msg), e};     \
-    }                                           \
+#define DMITIGR_WINCOM_THROW_IF_ERROR(error, message)   \
+  do {                                                  \
+    if (const HRESULT m__err{error}; FAILED(m__err)) {  \
+      if (m__err == E_OUTOFMEMORY)                      \
+        throw std::bad_alloc{};                         \
+      else                                              \
+        throw Win_error{std::move(message), m__err};    \
+    }                                                   \
   } while (false)

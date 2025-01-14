@@ -359,8 +359,8 @@ public:
   {
     ITaskFolderCollection* result{};
     const auto err = detail::api(*this).GetFolders(0, &result);
-    throw_if_error(err, "cannot get all the subfolders in the folder of"
-      " registered tasks");
+    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot get all the subfolders in the"
+      " folder of registered tasks");
     return Task_folder_collection{result};
   }
 
@@ -374,7 +374,7 @@ public:
   {
     IRegisteredTaskCollection* result{};
     const auto err = detail::api(*this).GetTasks(flags, &result);
-    throw_if_error(err, "cannot get all the tasks in the folder");
+    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot get all the tasks in the folder");
     return Registered_task_collection{result};
   }
 };
@@ -401,8 +401,8 @@ public:
       user.data(),
       domain.data(),
       password.data());
-    throw_if_error(err, "cannot connect to remote computer and associate all"
-      " subsequent calls on "+std::string{"ITaskService"}
+    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot connect to remote computer and"
+      " associate all subsequent calls on "+std::string{"ITaskService"}
       +" interface with a local (remote) session");
   }
 
@@ -418,7 +418,7 @@ public:
   {
     ITaskFolder* result{};
     const auto err = detail::api(*this).GetFolder(_bstr_t(path.c_str()), &result);
-    throw_if_error(err, "cannot get folder of registered tasks");
+    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot get folder of registered tasks");
     return Task_folder{result};
   }
 };

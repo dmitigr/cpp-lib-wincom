@@ -51,8 +51,8 @@ public:
     Value value;
     const auto err = detail::api(*this).Get(name, 0,
       &value.data.data(), &value.type, flavor);
-    throw_if_error(err, "cannot get property "+winbase::utf16_to_utf8(name)
-      +" of IWbemClassObject");
+    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot get property "
+      +winbase::utf16_to_utf8(name)+" of IWbemClassObject");
     return value;
   }
 };
@@ -71,7 +71,8 @@ public:
     if (err == WBEM_S_NO_ERROR)
       return Class_object{result};
     else if (err != WBEM_S_FALSE)
-      throw_if_error(err, "cannot get next object of IEnumWbemClassObject");
+      DMITIGR_WINCOM_THROW_IF_ERROR(err,
+        "cannot get next object of IEnumWbemClassObject");
     return Class_object{};
   }
 };
@@ -92,8 +93,8 @@ public:
       flags,
       ctx,
       &result);
-    throw_if_error(err, "cannot execute query to retrieve objects from"
-      " WMI services");
+    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot execute query to retrieve"
+      " objects from WMI services");
     return Enum_class_object{result};
   }
 
@@ -112,7 +113,7 @@ public:
     IWbemClassObject* result{};
     const auto err = detail::api(*this).GetObject(path, flags, ctx, &result,
       nullptr);
-    throw_if_error(err, "cannot get object from WMI services");
+    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot get object from WMI services");
     return Class_object{result};
   }
 };
@@ -140,7 +141,7 @@ public:
       authority,
       ctx,
       &result);
-    throw_if_error(err, "cannot connect to "
+    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot connect to "
       +winbase::com::to_string(network_resource));
     return Services{result};
   }

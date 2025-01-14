@@ -18,6 +18,7 @@
 #pragma comment(lib, "ole32")
 
 #include "../base/noncopymove.hpp"
+#include "../winbase/windows.hpp"
 #include "exceptions.hpp"
 
 #include <comdef.h> // avoid LNK2019

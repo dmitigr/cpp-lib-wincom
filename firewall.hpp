@@ -340,10 +340,10 @@ public:
   }
 
   template<class String>
-  Rule rule(const String& name)
+  Rule rule(const String& name) const
   {
     INetFwRule* rul{};
-    const auto err = api().Item(detail::bstr(name), &rul);
+    const auto err = detail::api(*this).Item(detail::bstr(name), &rul);
     if (err != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) && err != S_OK)
       throw Win_error{"cannot retrieve firewall rule", err};
     return Rule{rul};

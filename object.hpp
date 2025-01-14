@@ -442,22 +442,22 @@ String str(const Wrapper& wrapper, HRESULT(Api::* getter)(BSTR*))
   return String(tmp);
 }
 
-inline auto* c_str(const std::string& s)
+inline auto* c_str(const std::string& s) noexcept
 {
   return s.c_str();
 }
 
-inline auto* c_str(const std::wstring& s)
+inline auto* c_str(const std::wstring& s) noexcept
 {
   return s.c_str();
 }
 
-inline auto* c_str(const char*& s)
+inline auto* c_str(const char*& s) noexcept
 {
   return s;
 }
 
-inline auto* c_str(const wchar_t*& s)
+inline auto* c_str(const wchar_t*& s) noexcept
 {
   return s;
 }
@@ -466,6 +466,30 @@ template<typename String>
 inline _bstr_t bstr(const String& s)
 {
   return _bstr_t{c_str(s)};
+}
+
+inline VARIANT_BOOL variant_bool(const bool value) noexcept
+{
+  return value ? VARIANT_TRUE : VARIANT_FALSE;
+}
+
+template<class Wrapper, class Api>
+void set(const char* const what,
+  const Wrapper& wrapper, HRESULT(Api::* setter)(VARIANT_BOOL),
+  const bool value)
+{
+  const auto err = (api(wrapper).*setter)(variant_bool(value));
+  DMITIGR_WINCOM_THROW_IF_ERROR(err, std::string{"cannot set "}.append(what));
+}
+
+template<class Wrapper, class Api>
+bool get(const char* const what,
+  const Wrapper& wrapper, HRESULT(Api::* getter)(VARIANT_BOOL*))
+{
+  VARIANT_BOOL result{VARIANT_FALSE};
+  const auto err = (api(wrapper).*getter)(&result);
+  DMITIGR_WINCOM_THROW_IF_ERROR(err, std::string{"cannot get "}.append(what));
+  return result == VARIANT_TRUE;
 }
 
 } // namespace detail

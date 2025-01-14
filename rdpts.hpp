@@ -147,6 +147,54 @@ public:
     return std::chrono::minutes{result};
   }
 
+  void set_redirect_drives_enabled(const bool value)
+  {
+    detail::set("redirect drives enabled",
+      *this, &Api::put_RedirectDrives, value);
+  }
+
+  bool is_redirect_drives_enabled() const
+  {
+    return detail::get("redirect drives enabled",
+      *this, &Api::get_RedirectDrives);
+  }
+
+  void set_redirect_ports_enabled(const bool value)
+  {
+    detail::set("redirect ports enabled",
+      *this, &Api::put_RedirectPorts, value);
+  }
+
+  bool is_redirect_port_enabled() const
+  {
+    return detail::get("redirect ports enabled",
+      *this, &Api::get_RedirectPorts);
+  }
+
+  void set_redirect_printers_enabled(const bool value)
+  {
+    detail::set("redirect printers enabled",
+      *this, &Api::put_RedirectPrinters, value);
+  }
+
+  bool is_redirect_printers_enabled() const
+  {
+    return detail::get("redirect printers enabled",
+      *this, &Api::get_RedirectPrinters);
+  }
+
+  void set_redirect_smart_cards_enabled(const bool value)
+  {
+    detail::set("redirect smart cards enabled",
+      *this, &Api::put_RedirectSmartCards, value);
+  }
+
+  bool is_redirect_smart_cards_enabled() const
+  {
+    return detail::get("redirect smart cards enabled",
+      *this, &Api::get_RedirectSmartCards);
+  }
+
   /// @param value The minimum valid value is `10000`.
   void set_keep_alive_interval(const std::chrono::milliseconds value)
   {

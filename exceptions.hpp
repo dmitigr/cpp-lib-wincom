@@ -25,6 +25,7 @@
 
 namespace dmitigr::wincom {
 
+/// FIXME: inherit from std::system_error
 class Win_error final : public std::runtime_error {
 public:
   Win_error(std::string message, const long code)
@@ -49,12 +50,25 @@ inline void check(const T& condition, const std::string& message)
     throw std::logic_error{message};
 }
 
+[[deprecated]]
 inline void throw_if_error(const HRESULT err, std::string message)
 {
-  if (err == E_OUTOFMEMORY)
-    throw std::bad_alloc{};
-  else if (err != S_OK)
-    throw Win_error{std::move(message), err};
+  if (FAILED(err)) {
+    if (err == E_OUTOFMEMORY)
+      throw std::bad_alloc{};
+    else
+      throw Win_error{std::move(message), err};
+  }
 }
 
 } // namespace dmitigr::wincom
+
+#define DMITIGR_WINCOM_THROW_IF_ERROR(err, msg)     \
+  do {                                              \
+    if (FAILED(err)) {                              \
+      if (err == E_OUTOFMEMORY)                     \
+        throw std::bad_alloc{};                     \
+      else                                          \
+        throw Win_error{std::move(msg), err};       \
+    }                                               \
+  } while (false)

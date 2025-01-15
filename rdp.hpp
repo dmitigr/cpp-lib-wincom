@@ -41,7 +41,7 @@ public:
   template<class String>
   String connection() const
   {
-    return detail::str<String>(*this, &Api::get_ConnectionString);
+    return detail::get<String>(*this, &Api::get_ConnectionString);
   }
 
   bool is_revoked() const
@@ -112,7 +112,7 @@ public:
   template<class String>
   String local_address() const
   {
-    return detail::str<String>(*this, &Api::get_LocalIP);
+    return detail::get<String>(*this, &Api::get_LocalIP);
   }
 
   long local_port() const
@@ -125,7 +125,7 @@ public:
   template<class String>
   String remote_address() const
   {
-    return detail::str<String>(*this, &Api::get_PeerIP);
+    return detail::get<String>(*this, &Api::get_PeerIP);
   }
 
   long remote_port() const

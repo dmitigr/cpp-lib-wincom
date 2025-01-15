@@ -433,21 +433,6 @@ template<class ComObject>
   return api<typename ComObject::Api>(com);
 }
 
-template<typename T>
-[[nodiscard]] T& unconst(const T& obj) noexcept
-{
-  return const_cast<T&>(obj);
-}
-
-template<class String, class Wrapper, class Api>
-String str(const Wrapper& wrapper, HRESULT(Api::* getter)(BSTR*))
-{
-  BSTR value;
-  (detail::api<Api>(wrapper).*getter)(&value);
-  _bstr_t tmp{value, false}; // take ownership
-  return String(tmp);
-}
-
 inline auto* c_str(const std::string& s) noexcept
 {
   return s.c_str();
@@ -479,6 +464,16 @@ inline VARIANT_BOOL variant_bool(const bool value) noexcept
   return value ? VARIANT_TRUE : VARIANT_FALSE;
 }
 
+template<class Wrapper, class Api, typename T>
+std::enable_if_t<std::is_arithmetic_v<T>>
+set(const char* const what,
+  const Wrapper& wrapper, HRESULT(Api::* setter)(T),
+  const T value)
+{
+  const auto err = (api<Api>(wrapper).*setter)(value);
+  DMITIGR_WINCOM_THROW_IF_ERROR(err, std::string{"cannot set "}.append(what));
+}
+
 template<class Wrapper, class Api>
 void set(const char* const what,
   const Wrapper& wrapper, HRESULT(Api::* setter)(VARIANT_BOOL),
@@ -488,14 +483,26 @@ void set(const char* const what,
   DMITIGR_WINCOM_THROW_IF_ERROR(err, std::string{"cannot set "}.append(what));
 }
 
-template<class Wrapper, class Api>
-bool get(const char* const what,
-  const Wrapper& wrapper, HRESULT(Api::* getter)(VARIANT_BOOL*))
+template<class Wrapper, class Api, typename T>
+auto get(const char* const what,
+  const Wrapper& wrapper, HRESULT(Api::* getter)(T*))
 {
-  VARIANT_BOOL result{VARIANT_FALSE};
+  T result{std::is_same_v<T, VARIANT_BOOL> ? VARIANT_FALSE : T{}};
   const auto err = (api<Api>(wrapper).*getter)(&result);
   DMITIGR_WINCOM_THROW_IF_ERROR(err, std::string{"cannot get "}.append(what));
-  return result == VARIANT_TRUE;
+  if constexpr (std::is_same_v<T, VARIANT_BOOL>)
+    return result == VARIANT_TRUE;
+  else
+    return result;
+}
+
+template<class String, class Wrapper, class Api>
+String get(const Wrapper& wrapper, HRESULT(Api::* getter)(BSTR*))
+{
+  BSTR value;
+  (detail::api<Api>(wrapper).*getter)(&value);
+  _bstr_t tmp{value, false}; // take ownership
+  return String(tmp);
 }
 
 } // namespace detail

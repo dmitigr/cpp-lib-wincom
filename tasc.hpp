@@ -88,49 +88,49 @@ public:
   template<class String>
   String author() const
   {
-    return detail::str<String>(*this, &Api::get_Author);
+    return detail::get<String>(*this, &Api::get_Author);
   }
 
   template<class String>
   String date() const
   {
-    return detail::str<String>(*this, &Api::get_Date);
+    return detail::get<String>(*this, &Api::get_Date);
   }
 
   template<class String>
   String description() const
   {
-    return detail::str<String>(*this, &Api::get_Description);
+    return detail::get<String>(*this, &Api::get_Description);
   }
 
   template<class String>
   String documentation() const
   {
-    return detail::str<String>(*this, &Api::get_Documentation);
+    return detail::get<String>(*this, &Api::get_Documentation);
   }
 
   template<class String>
   String source() const
   {
-    return detail::str<String>(*this, &Api::get_Source);
+    return detail::get<String>(*this, &Api::get_Source);
   }
 
   template<class String>
   String uri() const
   {
-    return detail::str<String>(*this, &Api::get_URI);
+    return detail::get<String>(*this, &Api::get_URI);
   }
 
   template<class String>
   String version() const
   {
-    return detail::str<String>(*this, &Api::get_Version);
+    return detail::get<String>(*this, &Api::get_Version);
   }
 
   template<class String>
   String xml_text() const
   {
-    return detail::str<String>(*this, &Api::get_XmlText);
+    return detail::get<String>(*this, &Api::get_XmlText);
   }
 };
 
@@ -143,13 +143,13 @@ public:
   template<class String>
   String duration() const
   {
-    return detail::str<String>(*this, &Api::get_Duration);
+    return detail::get<String>(*this, &Api::get_Duration);
   }
 
   template<class String>
   String interval() const
   {
-    return detail::str<String>(*this, &Api::get_Interval);
+    return detail::get<String>(*this, &Api::get_Interval);
   }
 
   bool is_stopped_at_the_end_of_duration() const
@@ -183,25 +183,25 @@ public:
   template<class String>
   String id() const
   {
-    return detail::str<String>(*this, &Api::get_Id);
+    return detail::get<String>(*this, &Api::get_Id);
   }
 
   template<class String>
   String start_boundary() const
   {
-    return detail::str<String>(*this, &Api::get_StartBoundary);
+    return detail::get<String>(*this, &Api::get_StartBoundary);
   }
 
   template<class String>
   String end_boundary() const
   {
-    return detail::str<String>(*this, &Api::get_EndBoundary);
+    return detail::get<String>(*this, &Api::get_EndBoundary);
   }
 
   template<class String>
   String execution_time_limit() const
   {
-    return detail::str<String>(*this, &Api::get_ExecutionTimeLimit);
+    return detail::get<String>(*this, &Api::get_ExecutionTimeLimit);
   }
 
   Repetition_pattern repetition_pattern() const
@@ -266,13 +266,13 @@ public:
   template<class String>
   String name() const
   {
-    return detail::str<String>(*this, &Api::get_Name);
+    return detail::get<String>(*this, &Api::get_Name);
   }
 
   template<class String>
   String path() const
   {
-    return detail::str<String>(*this, &Api::get_Path);
+    return detail::get<String>(*this, &Api::get_Path);
   }
 
   TASK_STATE state() const

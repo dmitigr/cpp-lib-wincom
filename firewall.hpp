@@ -60,7 +60,7 @@ public:
   template<class String>
   String name() const
   {
-    return detail::str<String>(*this, &Api::get_Name);
+    return detail::get<String>(*this, &Api::get_Name);
   }
 
   template<class String>
@@ -73,7 +73,7 @@ public:
   template<class String>
   String process_image_file_name() const
   {
-    return detail::str<String>(*this, &Api::get_ProcessImageFileName);
+    return detail::get<String>(*this, &Api::get_ProcessImageFileName);
   }
 
   template<class String>
@@ -179,7 +179,7 @@ public:
   template<class String>
   String name() const
   {
-    return detail::str<String>(*this, &Api::get_Name);
+    return detail::get<String>(*this, &Api::get_Name);
   }
 
   template<class String>
@@ -192,7 +192,7 @@ public:
   template<class String>
   String application_name() const
   {
-    return detail::str<String>(*this, &Api::get_ApplicationName);
+    return detail::get<String>(*this, &Api::get_ApplicationName);
   }
 
   template<class String>
@@ -205,7 +205,7 @@ public:
   template<class String>
   String description() const
   {
-    return detail::str<String>(*this, &Api::get_Description);
+    return detail::get<String>(*this, &Api::get_Description);
   }
 
   template<class String>
@@ -218,7 +218,7 @@ public:
   template<class String>
   String grouping() const
   {
-    return detail::str<String>(*this, &Api::get_Grouping);
+    return detail::get<String>(*this, &Api::get_Grouping);
   }
 
   template<class String>
@@ -231,7 +231,7 @@ public:
   template<class String>
   String interface_types() const
   {
-    return detail::str<String>(*this, &Api::get_InterfaceTypes);
+    return detail::get<String>(*this, &Api::get_InterfaceTypes);
   }
 
   template<class String>
@@ -244,7 +244,7 @@ public:
   template<class String>
   String remote_addresses() const
   {
-    return detail::str<String>(*this, &Api::get_RemoteAddresses);
+    return detail::get<String>(*this, &Api::get_RemoteAddresses);
   }
 
   template<class String>
@@ -257,7 +257,7 @@ public:
   template<class String>
   String remote_ports() const
   {
-    return detail::str<String>(*this, &Api::get_RemotePorts);
+    return detail::get<String>(*this, &Api::get_RemotePorts);
   }
 
   template<class String>

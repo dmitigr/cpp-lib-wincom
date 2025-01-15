@@ -337,7 +337,7 @@ public:
   template<class String>
   String version() const
   {
-    return detail::str<String>(*this, &Api::get_Version);
+    return detail::get<String>(*this, &Api::get_Version);
   }
 
   /**
@@ -356,7 +356,7 @@ public:
   template<class String>
   String server() const
   {
-    return detail::str<String>(*this, &Api::get_Server);
+    return detail::get<String>(*this, &Api::get_Server);
   }
 
   template<class String>
@@ -370,7 +370,7 @@ public:
   template<class String>
   String user_name() const
   {
-    return detail::str<String>(*this, &Api::get_UserName);
+    return detail::get<String>(*this, &Api::get_UserName);
   }
 
   void set_prompt_for_credentials_enabled(const bool value)

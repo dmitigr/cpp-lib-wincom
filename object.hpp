@@ -17,6 +17,7 @@
 #pragma once
 #pragma comment(lib, "ole32")
 
+#include "../base/assert.hpp"
 #include "../base/noncopymove.hpp"
 #include "../winbase/windows.hpp"
 #include "exceptions.hpp"
@@ -464,21 +465,26 @@ inline VARIANT_BOOL variant_bool(const bool value) noexcept
   return value ? VARIANT_TRUE : VARIANT_FALSE;
 }
 
-template<class Wrapper, class Api, typename T>
-std::enable_if_t<std::is_arithmetic_v<T>>
+template<class Wrapper, class Api, typename T, typename U>
+std::enable_if_t<std::is_arithmetic_v<T> && std::is_arithmetic_v<U>>
 set(const char* const what,
   const Wrapper& wrapper, HRESULT(Api::* setter)(T),
-  const T value)
+  const U value)
 {
+  DMITIGR_ASSERT(what);
+  DMITIGR_ASSERT(setter);
   const auto err = (api<Api>(wrapper).*setter)(value);
   DMITIGR_WINCOM_THROW_IF_ERROR(err, std::string{"cannot set "}.append(what));
 }
 
-template<class Wrapper, class Api>
-void set(const char* const what,
+template<class Wrapper, class Api, typename U>
+std::enable_if_t<std::is_convertible_v<U, bool>>
+set(const char* const what,
   const Wrapper& wrapper, HRESULT(Api::* setter)(VARIANT_BOOL),
-  const bool value)
+  const U value)
 {
+  DMITIGR_ASSERT(what);
+  DMITIGR_ASSERT(setter);
   const auto err = (api<Api>(wrapper).*setter)(variant_bool(value));
   DMITIGR_WINCOM_THROW_IF_ERROR(err, std::string{"cannot set "}.append(what));
 }
@@ -487,6 +493,8 @@ template<class Wrapper, class Api, typename T>
 auto get(const char* const what,
   const Wrapper& wrapper, HRESULT(Api::* getter)(T*))
 {
+  DMITIGR_ASSERT(what);
+  DMITIGR_ASSERT(getter);
   T result{std::is_same_v<T, VARIANT_BOOL> ? VARIANT_FALSE : T{}};
   const auto err = (api<Api>(wrapper).*getter)(&result);
   DMITIGR_WINCOM_THROW_IF_ERROR(err, std::string{"cannot get "}.append(what));
@@ -499,6 +507,7 @@ auto get(const char* const what,
 template<class String, class Wrapper, class Api>
 String get(const Wrapper& wrapper, HRESULT(Api::* getter)(BSTR*))
 {
+  DMITIGR_ASSERT(getter);
   BSTR value;
   (detail::api<Api>(wrapper).*getter)(&value);
   _bstr_t tmp{value, false}; // take ownership

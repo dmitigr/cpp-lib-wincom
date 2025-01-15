@@ -66,15 +66,12 @@ public:
 
   void set_rdp_port(const LONG value)
   {
-    const auto err = api().put_RDPPort(value);
-    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot set RDP port");
+    detail::set("RDP port", *this, &Api::put_RDPPort, value);
   }
 
   LONG rdp_port() const
   {
-    LONG result{};
-    detail::api(*this).get_RDPPort(&result);
-    return result;
+    return detail::get("RDP port", *this, &Api::get_RDPPort);
   }
 
   void set_smart_sizing_enabled(const bool value)
@@ -90,16 +87,14 @@ public:
 
   void set_overall_connection_timeout(const std::chrono::seconds value)
   {
-    const auto err = api().put_overallConnectionTimeout(value.count());
-    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot set overall connection timeout");
+    detail::set("overall connection timeout",
+      *this, &Api::put_overallConnectionTimeout, value.count());
   }
 
   std::chrono::seconds overall_connection_timeout() const
   {
-    LONG result{};
-    const auto err = detail::api(*this).get_overallConnectionTimeout(&result);
-    DMITIGR_WINCOM_THROW_IF_ERROR(err, "cannot get overall connection timeout");
-    return std::chrono::seconds{result};
+    return std::chrono::seconds{detail::get("overall connection timeout",
+      *this, &Api::get_overallConnectionTimeout)};
   }
 
   void set_single_connection_timeout(const std::chrono::seconds value)

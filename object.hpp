@@ -519,8 +519,10 @@ template<class String, class Wrapper, class Api>
 String get(const Wrapper& wrapper, HRESULT(Api::* getter)(BSTR*))
 {
   DMITIGR_ASSERT(getter);
-  BSTR value;
+  BSTR value{};
   (detail::api<Api>(wrapper).*getter)(&value);
+  if (!value)
+    throw std::runtime_error{"cannot get BSTR value"};
   _bstr_t tmp{value, false}; // take ownership
   return String(tmp);
 }

@@ -265,6 +265,30 @@ public:
       *this, &Api::get_RedirectClipboard);
   }
 
+  void set_redirect_devices_enabled(const bool value)
+  {
+    detail::set("redirect devices enabled",
+      *this, &Api::put_RedirectDevices, value);
+  }
+
+  bool is_redirect_devices_enabled() const
+  {
+    return detail::get("redirect devices enabled",
+      *this, &Api::get_RedirectDevices);
+  }
+
+  void set_redirect_pos_devices_enabled(const bool value)
+  {
+    detail::set("redirect POS devices enabled",
+      *this, &Api::put_RedirectPOSDevices, value);
+  }
+
+  bool is_redirect_pos_devices_enabled() const
+  {
+    return detail::get("redirect POS devices enabled",
+      *this, &Api::get_RedirectPOSDevices);
+  }
+
   // IMsRdpClientAdvancedSettings7
 
   void set_network_connection_type(const Network_connection_type value)
@@ -390,6 +414,19 @@ public:
   {
     return detail::get("PromptForCredsOnClient property of RDP client", *this,
       &MSTSCLib::IMsRdpClientNonScriptable4::get_PromptForCredsOnClient);
+  }
+
+  void set_allow_prompting_for_credentials_enabled(const bool value)
+  {
+    detail::set("AllowPromptingForCredentials property of RDP client", *this,
+      &MSTSCLib::IMsRdpClientNonScriptable5::put_AllowPromptingForCredentials,
+      value);
+  }
+
+  bool is_allow_prompting_for_credentials_enabled() const noexcept
+  {
+    return detail::get("AllowPromptingForCredentials property of RDP client", *this,
+      &MSTSCLib::IMsRdpClientNonScriptable5::get_AllowPromptingForCredentials);
   }
 
   void set_desktop_height(const LONG value)

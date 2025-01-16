@@ -466,8 +466,7 @@ inline VARIANT_BOOL variant_bool(const bool value) noexcept
 }
 
 template<class Wrapper, class Api, typename T, typename U>
-std::enable_if_t<std::is_arithmetic_v<T> && std::is_arithmetic_v<U>>
-set(const char* const what,
+void set(const char* const what,
   const Wrapper& wrapper, HRESULT(Api::* setter)(T),
   const U value)
 {
@@ -482,25 +481,38 @@ void set(const char* const what,
   const Wrapper& wrapper, HRESULT(Api::* setter)(VARIANT_BOOL),
   const bool value)
 {
-  DMITIGR_ASSERT(what);
-  DMITIGR_ASSERT(setter);
-  const auto err = (api<Api>(wrapper).*setter)(variant_bool(value));
-  DMITIGR_WINCOM_THROW_IF_ERROR(err, std::string{"cannot set "}.append(what));
+  set(what, wrapper, setter, variant_bool(value));
+}
+
+template<class Wrapper, class Api, class T>
+void set(const char* const what,
+  const Wrapper& wrapper, HRESULT(Api::* setter)(BSTR),
+  const T& value)
+{
+  using std::is_same_v;
+  if constexpr (!is_same_v<T, BSTR> && !is_same_v<T, _bstr_t>)
+    set(what, wrapper, setter, bstr(value));
+  else
+    set(what, wrapper, setter, value);
 }
 
 template<class Wrapper, class Api, typename T>
-auto get(const char* const what,
+T get(const char* const what,
   const Wrapper& wrapper, HRESULT(Api::* getter)(T*))
 {
   DMITIGR_ASSERT(what);
   DMITIGR_ASSERT(getter);
-  T result{std::is_same_v<T, VARIANT_BOOL> ? VARIANT_FALSE : T{}};
+  T result{};
   const auto err = (api<Api>(wrapper).*getter)(&result);
   DMITIGR_WINCOM_THROW_IF_ERROR(err, std::string{"cannot get "}.append(what));
-  if constexpr (std::is_same_v<T, VARIANT_BOOL>)
-    return result == VARIANT_TRUE;
-  else
-    return result;
+  return result;
+}
+
+template<class Wrapper, class Api>
+bool get_bool(const char* const what,
+  const Wrapper& wrapper, HRESULT(Api::* getter)(VARIANT_BOOL*))
+{
+  return get(what, wrapper, getter) == VARIANT_TRUE;
 }
 
 template<class String, class Wrapper, class Api>

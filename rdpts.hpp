@@ -82,7 +82,7 @@ public:
 
   bool is_smart_sizing_enabled() const noexcept
   {
-    return detail::get("smart sizing enabled", *this, &Api::get_SmartSizing);
+    return detail::get_bool("smart sizing enabled", *this, &Api::get_SmartSizing);
   }
 
   void set_overall_connection_timeout(const std::chrono::seconds value)
@@ -147,7 +147,7 @@ public:
 
   bool is_redirect_drives_enabled() const
   {
-    return detail::get("redirect drives enabled",
+    return detail::get_bool("redirect drives enabled",
       *this, &Api::get_RedirectDrives);
   }
 
@@ -159,7 +159,7 @@ public:
 
   bool is_redirect_port_enabled() const
   {
-    return detail::get("redirect ports enabled",
+    return detail::get_bool("redirect ports enabled",
       *this, &Api::get_RedirectPorts);
   }
 
@@ -171,7 +171,7 @@ public:
 
   bool is_redirect_printers_enabled() const
   {
-    return detail::get("redirect printers enabled",
+    return detail::get_bool("redirect printers enabled",
       *this, &Api::get_RedirectPrinters);
   }
 
@@ -183,7 +183,7 @@ public:
 
   bool is_redirect_smart_cards_enabled() const
   {
-    return detail::get("redirect smart cards enabled",
+    return detail::get_bool("redirect smart cards enabled",
       *this, &Api::get_RedirectSmartCards);
   }
 
@@ -212,7 +212,7 @@ public:
 
   bool is_auto_reconnect_enabled() const
   {
-    return detail::get("auto reconnect enabled",
+    return detail::get_bool("auto reconnect enabled",
       *this, &Api::get_EnableAutoReconnect);
   }
 
@@ -261,7 +261,7 @@ public:
 
   bool is_redirect_clipboard_enabled() const
   {
-    return detail::get("redirect clipboard enabled",
+    return detail::get_bool("redirect clipboard enabled",
       *this, &Api::get_RedirectClipboard);
   }
 
@@ -273,7 +273,7 @@ public:
 
   bool is_redirect_devices_enabled() const
   {
-    return detail::get("redirect devices enabled",
+    return detail::get_bool("redirect devices enabled",
       *this, &Api::get_RedirectDevices);
   }
 
@@ -285,7 +285,7 @@ public:
 
   bool is_redirect_pos_devices_enabled() const
   {
-    return detail::get("redirect POS devices enabled",
+    return detail::get_bool("redirect POS devices enabled",
       *this, &Api::get_RedirectPOSDevices);
   }
 
@@ -400,8 +400,8 @@ public:
 
   bool is_prompt_for_credentials_enabled() const noexcept
   {
-    return detail::get("PromptForCredentials property of RDP client", *this,
-      &MSTSCLib::IMsRdpClientNonScriptable3::get_PromptForCredentials);
+    return detail::get_bool("PromptForCredentials property of RDP client",
+      *this, &MSTSCLib::IMsRdpClientNonScriptable3::get_PromptForCredentials);
   }
 
   void set_prompt_for_credentials_on_client_enabled(const bool value)
@@ -412,8 +412,8 @@ public:
 
   bool is_prompt_for_credentials_on_client_enabled() const noexcept
   {
-    return detail::get("PromptForCredsOnClient property of RDP client", *this,
-      &MSTSCLib::IMsRdpClientNonScriptable4::get_PromptForCredsOnClient);
+    return detail::get_bool("PromptForCredsOnClient property of RDP client",
+      *this, &MSTSCLib::IMsRdpClientNonScriptable4::get_PromptForCredsOnClient);
   }
 
   void set_allow_prompting_for_credentials_enabled(const bool value)
@@ -425,7 +425,8 @@ public:
 
   bool is_allow_prompting_for_credentials_enabled() const noexcept
   {
-    return detail::get("AllowPromptingForCredentials property of RDP client", *this,
+    return detail::get_bool("AllowPromptingForCredentials property of RDP client",
+      *this,
       &MSTSCLib::IMsRdpClientNonScriptable5::get_AllowPromptingForCredentials);
   }
 

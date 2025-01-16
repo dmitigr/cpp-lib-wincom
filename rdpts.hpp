@@ -392,6 +392,19 @@ public:
     return detail::get<String>(*this, &Api::get_UserName);
   }
 
+  template<class String>
+  void set_domain(const std::string& value)
+  {
+    detail::set("Domain property of RDP client",
+      *this, &Api::put_Domain, value);
+  }
+
+  template<class String>
+  String domain() const
+  {
+    return detail::get<String>(*this, &Api::get_Domain);
+  }
+
   void set_prompt_for_credentials_enabled(const bool value)
   {
     detail::set("PromptForCredentials property of RDP client", *this,

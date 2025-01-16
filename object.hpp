@@ -477,11 +477,10 @@ set(const char* const what,
   DMITIGR_WINCOM_THROW_IF_ERROR(err, std::string{"cannot set "}.append(what));
 }
 
-template<class Wrapper, class Api, typename U>
-std::enable_if_t<std::is_convertible_v<U, bool>>
-set(const char* const what,
+template<class Wrapper, class Api>
+void set(const char* const what,
   const Wrapper& wrapper, HRESULT(Api::* setter)(VARIANT_BOOL),
-  const U value)
+  const bool value)
 {
   DMITIGR_ASSERT(what);
   DMITIGR_ASSERT(setter);

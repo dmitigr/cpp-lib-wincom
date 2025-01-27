@@ -18,6 +18,7 @@
 
 #include "../base/contract.hpp"
 #include "../winbase/windows.hpp"
+#include "enumerator.hpp"
 #include "exceptions.hpp"
 #include "object.hpp"
 
@@ -143,13 +144,6 @@ public:
   }
 };
 
-class Attendee_manager final : public
-  Unknown_api<Attendee_manager, IRDPSRAPIAttendeeManager> {
-  using Ua = Unknown_api<Attendee_manager, IRDPSRAPIAttendeeManager>;
-public:
-  using Ua::Ua;
-};
-
 class Attendee final : public
   Unknown_api<Attendee, IRDPSRAPIAttendee> {
   using Ua = Unknown_api<Attendee, IRDPSRAPIAttendee>;
@@ -167,7 +161,7 @@ public:
   {
     IUnknown* info{};
     detail::api(*this).get_ConnectivityInfo(&info);
-    check(info, "invalid attendee connectivity info retrieved from attendee");
+    check(info, "invalid connectivity info retrieved from attendee");
     try {
       return Tcp_connection_info::query(info);
     } catch (const std::runtime_error&) {}
@@ -188,8 +182,30 @@ public:
   {
     IRDPSRAPIInvitation* raw{};
     detail::api(*this).get_Invitation(&raw);
-    check(raw, "invalid invitation retrieved from attendee instance");
+    check(raw, "invalid invitation retrieved from attendee");
     return Invitation{raw};
+  }
+};
+
+class Attendee_manager final : public
+  Unknown_api<Attendee_manager, IRDPSRAPIAttendeeManager> {
+  using Ua = Unknown_api<Attendee_manager, IRDPSRAPIAttendeeManager>;
+public:
+  using Ua::Ua;
+
+  Attendee attendee(const long id) const
+  {
+    IRDPSRAPIAttendee* raw{};
+    detail::api(*this).get_Item(id, &raw);
+    return Attendee{raw};
+  }
+
+  Enumerator<IEnumUnknown, IUnknown*> attendees() const
+  {
+    IUnknown* raw{};
+    detail::api(*this).get__NewEnum(&raw);
+    check(raw, "invalid enumerator retrieved from attendee manager");
+    return Enumerator<IEnumUnknown, IUnknown*>{raw};
   }
 };
 
